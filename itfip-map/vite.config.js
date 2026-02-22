@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     allowedHosts: [
-      'subtemperate-unremorsefully-arnold.ngrok-free.dev'
+      'soon-vanitied-unripplingly.ngrok-free.dev' // El dominio que te dio el error
     ]
   }
 })
