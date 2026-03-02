@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue';
 import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import UserMenu from '@/components/common/UserMenu.vue';
 
 const MAP_CENTER = [4.1563, -74.8975]; 
 const map = ref(null);
@@ -340,6 +341,12 @@ onMounted(async () => {
 
 <template>
   <div id="map"></div>
+  
+  <!-- User Menu -->
+  <div class="user-menu-container">
+    <UserMenu />
+  </div>
+  
   <div class="hud">
     <div class="brand-box">
       <h1 class="itfip-title">PRUEBA PILOTO</h1>
@@ -394,4 +401,18 @@ onMounted(async () => {
 .dest-pin { width:18px; height:28px; background: radial-gradient(circle at 35% 30%, #fff, #ffd1d1 40%, #ff4d4d 100%); border: 2px solid #fff; border-radius:9px 9px 9px 9px / 9px 9px 18px 18px; box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 18px rgba(255,77,77,0.12); transform:translateY(-8px); position:relative; animation: pulse 1.6s infinite ease-in-out; }
 @keyframes pulse { 0% { box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 0 rgba(255,77,77,0.12); transform:translateY(-8px) scale(1); } 50% { box-shadow: 0 14px 30px rgba(255,77,77,0.18), 0 0 32px rgba(255,77,77,0.08); transform:translateY(-10px) scale(1.05); } 100% { box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 0 rgba(255,77,77,0.12); transform:translateY(-8px) scale(1); } }
 @media (max-width:420px) { .hud { width: 92vw; left:4vw; right:4vw; bottom:20px; } .itfip-title { font-size:20px; } .gta-select { padding:10px; } }
+
+.user-menu-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1001;
+}
+
+@media (max-width:420px) {
+  .user-menu-container {
+    top: 12px;
+    right: 12px;
+  }
+}
 </style>  

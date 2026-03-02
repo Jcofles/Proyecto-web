@@ -9,10 +9,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
  */
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`
+  const token = localStorage.getItem('auth_token')
+  
   const config = {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
@@ -52,10 +55,53 @@ export const auth = {
    * @param {String} password - Contraseña
    */
   login: async (email, password) => {
-    return request('/auth/login', {
+    const data = await request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
+    if (data.token) {
+      localStorage.setItem('auth_token', data.token)
+    }
+    return data
+  },
+
+  /**
+   * Cerrar sesión
+   */
+  logout: async () => {
+    await request('/auth/logout', {
+      method: 'POST',
+    })
+    localStorage.removeItem('auth_token')
+  },
+
+  /**
+   * Obtener usuario actual
+   */
+  getUser: async () => {
+    return request('/auth/user', {
+      method: 'GET',
+    })
+  },
+
+  /**
+   * Actualizar perfil
+   */
+  updateProfile: async (name, email) => {
+    return request('/auth/update-profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name, email }),
+    })
+  },
+
+  /**
+   * Eliminar cuenta
+   */
+  deleteAccount: async () => {
+    await request('/auth/delete-account', {
+      method: 'DELETE',
+    })
+    localStorage.removeItem('auth_token')
   },
 
   /**

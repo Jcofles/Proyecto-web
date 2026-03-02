@@ -32,7 +32,7 @@
     <!-- ░░ THEME TOGGLE ░░ -->
     <div class="tog-area">
       <span class="tog-lbl">{{ night ? 'NOCHE' : 'DÍA' }}</span>
-      <button class="tog" @click="night = !night" aria-label="Cambiar tema">
+      <button class="tog" @click="toggleTheme" aria-label="Cambiar tema">
         <div class="tog-track">
           <div class="t-scene t-night" :class="{ vis: night }">
             <span class="t-moon"></span>
@@ -266,6 +266,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { auth } from '@/services/api'
 import EveAssistant from '@/components/common/EveAssistant.vue'
+import { useTheme } from '@/composables/useTheme'
 
 const router = useRouter()
 
@@ -274,7 +275,7 @@ const fn = ref(''), ln = ref(''), em = ref(''), pw = ref(''), cpw = ref('')
 const showPw = ref(false), foc = ref('')
 const loading = ref(false), resendLoading = ref(false)
 const success = ref(false), shaking = ref(false)
-const night = ref(true)
+const { night, toggleTheme: toggleThemeComposable } = useTheme()
 const pwErr = ref(false), fnErr = ref(false), lnErr = ref(false)
 const clock = ref('')
 const verificationLink = ref('') // URL devuelta por la API en modo local/log
@@ -284,6 +285,10 @@ const stage = ref('form') // 'form' | 'verification'
 const formError = ref('')
 
 const rnd = (a, b) => Math.random() * (b - a) + a
+
+function toggleTheme() {
+  toggleThemeComposable()
+}
 
 let clockInt
 function updateClock() {

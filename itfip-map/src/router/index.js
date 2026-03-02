@@ -4,22 +4,25 @@ import MapView from '../views/map/MapView.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/register'
+    redirect: '/login'
   },
   {
     path: '/map',
     name: 'mapa',
-    component: MapView
+    component: MapView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
     name: 'login',
-    component: () => import('../views/auth/LoginView.vue')
+    component: () => import('../views/auth/LoginView.vue'),
+    meta: { guest: true }
   },
   {
     path: '/register',
     name: 'register',
-    component: () => import('../views/auth/RegisterView.vue')
+    component: () => import('../views/auth/RegisterView.vue'),
+    meta: { guest: true }
   },
   {
     path: '/verify-email',
@@ -31,6 +34,18 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('auth_token')
+  
+  if (to.meta.requiresAuth && !token) {
+    next('/login')
+  } else if (to.meta.guest && token) {
+    next('/map')
+  } else {
+    next()
+  }
 })
 
 export default router

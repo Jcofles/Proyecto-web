@@ -21,6 +21,14 @@ Route::post('auth/register', [RegisterController::class, 'register']);
 Route::post('auth/verify-email', [RegisterController::class, 'verifyEmail']);
 Route::post('auth/resend-verification', [RegisterController::class, 'resendVerification']);
 
+// Rutas protegidas
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('auth/logout', [LoginController::class, 'logout']);
+    Route::get('auth/user', [LoginController::class, 'user']);
+    Route::put('auth/update-profile', [LoginController::class, 'updateProfile']);
+    Route::delete('auth/delete-account', [LoginController::class, 'deleteAccount']);
+});
+
 // Recuperación de contraseña
 Route::post('auth/forgot-password', [PasswordResetController::class, 'sendCode']);
 Route::post('auth/verify-code', [PasswordResetController::class, 'verifyCode']);

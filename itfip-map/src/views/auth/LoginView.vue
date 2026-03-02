@@ -33,7 +33,7 @@
     <!-- ░░ THEME TOGGLE ░░ -->
     <div class="tog-area">
       <span class="tog-lbl">{{ night ? 'NOCHE' : 'DÍA' }}</span>
-      <button class="tog" @click="night = !night" aria-label="Cambiar tema">
+      <button class="tog" @click="toggleTheme" aria-label="Cambiar tema">
         <div class="tog-track">
           <div class="t-scene t-night" :class="{ vis: night }">
             <span class="t-moon"></span>
@@ -463,11 +463,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import EveAssistant from '@/components/common/EveAssistant.vue'
 import { auth } from '@/services/api'
+import { useTheme } from '@/composables/useTheme'
 
 const router = useRouter()
 
 /* ── Estado general ── */
-const night    = ref(true)
+const { night, toggleTheme: toggleThemeComposable } = useTheme()
 const clock    = ref('')
 const cvs      = ref(null)
 const shaking  = ref(false)
@@ -559,6 +560,10 @@ function toggleCaptcha() {
 }
 
 /* ── Acciones de flujo ── */
+function toggleTheme() {
+  toggleThemeComposable()
+}
+
 function startRecover() {
   mode.value = 'recover'
   recoverStep.value = 1
@@ -902,15 +907,14 @@ onUnmounted(()=>{
 .card{
   position:relative;z-index:10;
   width:100%;max-width:440px;
+  max-height:calc(100dvh - 80px);
   background:var(--surf);border:1px solid var(--bo);border-radius:22px;
   backdrop-filter:blur(28px) saturate(155%);
   box-shadow:0 0 50px rgba(125,211,252,.07),0 28px 75px rgba(0,0,0,.55),inset 0 1px 0 rgba(125,211,252,.07);
-  overflow-y:auto;max-height:calc(100dvh - 80px);
-  scrollbar-width:none;
+  display:flex;flex-direction:column;
   animation:cardIn .78s cubic-bezier(.16,1,.3,1) both;
   transition:box-shadow .4s;
 }
-.card::-webkit-scrollbar{display:none}
 .card:hover{box-shadow:0 0 70px rgba(125,211,252,.11),0 32px 85px rgba(0,0,0,.6),inset 0 1px 0 rgba(125,211,252,.1)}
 @keyframes cardIn{from{opacity:0;transform:translateY(28px) scale(.974)}to{opacity:1;transform:translateY(0) scale(1)}}
 .card.shake{animation:shk .55s ease}
@@ -927,7 +931,7 @@ onUnmounted(()=>{
 @keyframes beam{from{background-position:0 0}to{background-position:400% 0}}
 
 /* ── Header ── */
-.hd{text-align:center;padding:26px 40px 18px;border-bottom:1px solid var(--bo);margin-bottom:0;animation:fUp .5s .1s ease both}
+.hd{text-align:center;padding:26px 40px 18px;border-bottom:1px solid var(--bo);margin-bottom:0;animation:fUp .5s .1s ease both;flex-shrink:0}
 @keyframes fUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
 .hd-logo{position:relative;width:48px;height:48px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center}
@@ -970,7 +974,11 @@ onUnmounted(()=>{
 .sdot.done{background:var(--b3);width:6px}
 
 /* ── Panel transitions ── */
-.panel{animation:panelIn .38s cubic-bezier(.16,1,.3,1) both}
+.panel{animation:panelIn .38s cubic-bezier(.16,1,.3,1) both;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(125,211,252,.2) transparent}
+.panel::-webkit-scrollbar{width:6px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:rgba(125,211,252,.2);border-radius:3px}
+.panel::-webkit-scrollbar-thumb:hover{background:rgba(125,211,252,.35)}
 @keyframes panelIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
 .panel-enter-active{transition:all .35s cubic-bezier(.16,1,.3,1)}
 .panel-leave-active{transition:all .2s ease}
@@ -978,7 +986,7 @@ onUnmounted(()=>{
 .panel-leave-to{opacity:0;transform:translateX(-12px)}
 
 /* ── Form ── */
-.form{padding:20px 34px 4px;display:flex;flex-direction:column;gap:13px}
+.form{padding:20px 34px 24px;display:flex;flex-direction:column;gap:13px}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);transition:color .25s;font-family:var(--FM)}
 .field.on label,.field.has label{color:var(--b)}
@@ -1135,7 +1143,7 @@ onUnmounted(()=>{
 @keyframes bnc{0%,80%,100%{transform:scale(.65);opacity:.4}40%{transform:scale(1);opacity:1}}
 
 /* ── Footer ── */
-.foot{padding:0 34px;margin-top:12px;margin-bottom:18px;text-align:center;font-size:13px;color:var(--txt3)}
+.foot{padding:0 34px 20px;margin-top:12px;text-align:center;font-size:13px;color:var(--txt3)}
 .fl{color:var(--b);text-decoration:none;font-weight:700;margin-left:4px;transition:all .25s}
 .fl:hover{color:var(--b2)}
 
