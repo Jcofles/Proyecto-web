@@ -144,6 +144,16 @@
               </button>
             </div>
 
+            <!-- Error Message -->
+            <Transition name="err-msg">
+              <div v-if="loginError" class="error-alert">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 10.5v.5" stroke-linecap="round"/>
+                </svg>
+                <span>{{ loginError }}</span>
+              </div>
+            </Transition>
+
             <button type="submit" class="btn" :disabled="loading">
               <span class="btn-bg"/>
               <span class="btn-shimmer"/>
@@ -452,6 +462,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import EveAssistant from '@/components/common/EveAssistant.vue'
+import { auth } from '@/services/api'
 
 const router = useRouter()
 
@@ -469,6 +480,7 @@ const pw       = ref('')
 const showPw   = ref(false)
 const loading  = ref(false)
 const eveError = ref(false)
+const loginError = ref('')
 
 /* ── Recuperar ── */
 const recoverStep  = ref(1)    // 1..4
@@ -565,22 +577,42 @@ function backToLogin() {
 }
 
 function submitLogin() {
-  // Solo visual — lógica en Laravel
+  if (!em.value || !pw.value) {
+    eveError.value = true
+    setTimeout(() => eveError.value = false, 1800)
+    return
+  }
+  
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
-    router.push('/map')
-  }, 1200)
+  loginError.value = ''
+  
+  auth.login(em.value, pw.value)
+    .then(() => {
+      loading.value = false
+      router.push('/map')
+    })
+    .catch(error => {
+      loading.value = false
+      eveError.value = true
+      setTimeout(() => eveError.value = false, 1800)
+      loginError.value = error.message || 'Credenciales incorrectas'
+    })
 }
 
 function submitRecoverEmail() {
   if (!captchaChecked.value) return
   recoverLoading.value = true
-  setTimeout(() => {
-    recoverLoading.value = false
-    recoverStep.value = 2
-    startResendCooldown()
-  }, 1300)
+  
+  auth.forgotPassword(recoverEmail.value)
+    .then(() => {
+      recoverLoading.value = false
+      recoverStep.value = 2
+      startResendCooldown()
+    })
+    .catch(error => {
+      recoverLoading.value = false
+      alert(error.message || 'Error al enviar el código')
+    })
 }
 
 function startResendCooldown() {
@@ -592,26 +624,44 @@ function startResendCooldown() {
 }
 
 function resendCode() {
-  startResendCooldown()
+  auth.forgotPassword(recoverEmail.value)
+    .then(() => {
+      startResendCooldown()
+    })
+    .catch(error => {
+      alert(error.message || 'Error al reenviar el código')
+    })
 }
 
 function submitCode() {
   if (recoverCode.value.length < 4) return
   recoverLoading.value = true
-  setTimeout(() => {
-    recoverLoading.value = false
-    recoverStep.value = 3
-  }, 1000)
+  
+  auth.verifyResetCode(recoverEmail.value, recoverCode.value)
+    .then(() => {
+      recoverLoading.value = false
+      recoverStep.value = 3
+    })
+    .catch(error => {
+      recoverLoading.value = false
+      alert(error.message || 'Código incorrecto')
+    })
 }
 
 function submitNewPassword() {
   validateNewPw()
   if (newPwErr.value || !newPw.value || !confirmNewPw.value) return
   recoverLoading.value = true
-  setTimeout(() => {
-    recoverLoading.value = false
-    recoverStep.value = 4
-  }, 1200)
+  
+  auth.resetPassword(recoverEmail.value, recoverCode.value, newPw.value, confirmNewPw.value)
+    .then(() => {
+      recoverLoading.value = false
+      recoverStep.value = 4
+    })
+    .catch(error => {
+      recoverLoading.value = false
+      alert(error.message || 'Error al cambiar la contraseña')
+    })
 }
 
 function goToLogin() {
@@ -977,6 +1027,11 @@ onUnmounted(()=>{
 .err-msg-enter-active{animation:errIn .3s ease both}
 .err-msg-leave-active{animation:errIn .2s ease reverse both}
 @keyframes errIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Error alert ── */
+.error-alert{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.32);border-radius:9px;margin-bottom:5px}
+.error-alert svg{width:16px;height:16px;color:var(--err);flex-shrink:0}
+.error-alert span{font-size:12px;font-weight:500;color:var(--err)}
 
 /* ── Forgot / Back buttons ── */
 .forgot-row{display:flex;justify-content:flex-end;margin-top:-4px}

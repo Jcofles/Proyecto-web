@@ -47,6 +47,18 @@ async function request(endpoint, options = {}) {
  */
 export const auth = {
   /**
+   * Iniciar sesión
+   * @param {String} email - Email del usuario
+   * @param {String} password - Contraseña
+   */
+  login: async (email, password) => {
+    return request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    })
+  },
+
+  /**
    * Registrar nuevo usuario
    * @param {Object} userData - Datos del usuario { nombres, apellidos, email, password, password_confirmation }
    */
@@ -76,6 +88,43 @@ export const auth = {
     return request('/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    })
+  },
+
+  /**
+   * Enviar código de recuperación
+   * @param {String} email - Email del usuario
+   */
+  forgotPassword: async (email) => {
+    return request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+
+  /**
+   * Verificar código de recuperación
+   * @param {String} email - Email del usuario
+   * @param {String} code - Código de 6 dígitos
+   */
+  verifyResetCode: async (email, code) => {
+    return request('/auth/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    })
+  },
+
+  /**
+   * Restablecer contraseña
+   * @param {String} email - Email del usuario
+   * @param {String} code - Código de verificación
+   * @param {String} password - Nueva contraseña
+   * @param {String} password_confirmation - Confirmación de contraseña
+   */
+  resetPassword: async (email, code, password, password_confirmation) => {
+    return request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, password, password_confirmation }),
     })
   },
 }
