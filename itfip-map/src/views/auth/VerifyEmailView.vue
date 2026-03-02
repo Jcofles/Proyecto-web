@@ -79,7 +79,7 @@
           </div>
           <h2>¡Correo verificado!</h2>
           <p>Tu cuenta ha sido confirmada correctamente.</p>
-          <p class="redirect-msg">Redirigiendo a MapView en {{ countdown }}...</p>
+          <p class="redirect-msg">Redirigiendo al login en {{ countdown }}...</p>
           <button @click="goToMap" class="btn-skip">Ir ahora →</button>
         </div>
 
@@ -147,7 +147,7 @@ onMounted(async () => {
       countdown.value--
       if (countdown.value < 0) {
         clearInterval(countdownInterval)
-        router.push('/map')
+        router.push('/login')
       }
     }, 1000)
 
@@ -163,7 +163,7 @@ onUnmounted(() => {
 })
 
 function goToMap() {
-  router.push('/map')
+  router.push('/login')
 }
 
 function resizeCanvas() {

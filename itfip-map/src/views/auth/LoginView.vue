@@ -5,6 +5,9 @@
     <canvas ref="cvs" class="cvs" />
     <div class="scanlines" />
 
+    <!-- ░░ EVE ░░ -->
+    <EveAssistant :show-password="showPw" :active-field="foc" :has-error="eveError" />
+
     <!-- ░░ HUD ░░ -->
     <div class="hud">
       <div class="hud-row">
@@ -448,6 +451,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import EveAssistant from '@/components/common/EveAssistant.vue'
 
 const router = useRouter()
 
@@ -464,6 +468,7 @@ const em       = ref('')
 const pw       = ref('')
 const showPw   = ref(false)
 const loading  = ref(false)
+const eveError = ref(false)
 
 /* ── Recuperar ── */
 const recoverStep  = ref(1)    // 1..4
@@ -562,7 +567,10 @@ function backToLogin() {
 function submitLogin() {
   // Solo visual — lógica en Laravel
   loading.value = true
-  setTimeout(() => { loading.value = false }, 1200)
+  setTimeout(() => {
+    loading.value = false
+    router.push('/map')
+  }, 1200)
 }
 
 function submitRecoverEmail() {
