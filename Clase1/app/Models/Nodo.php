@@ -42,4 +42,10 @@ class Nodo extends Model
             'nodo_origen_id'
         )->withPivot('distancia')->withTimestamps();
     }
+
+    public function user()
+{
+    return $this->belongsTo(User::class);
+}
+
 }
