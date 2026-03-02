@@ -54,17 +54,45 @@
       <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
         <div class="modal-box" @click.stop>
           <h3>Editar perfil</h3>
-          <div class="form-group">
-            <label>Nombre</label>
+          
+          <div class="edit-options">
+            <button 
+              @click="editMode = 'name'" 
+              class="option-btn"
+              :class="{ active: editMode === 'name' }"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+              </svg>
+              <span>Cambiar nombre</span>
+            </button>
+            
+            <button 
+              @click="editMode = 'email'" 
+              class="option-btn"
+              :class="{ active: editMode === 'email' }"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <path d="M22 6l-10 7L2 6"/>
+              </svg>
+              <span>Cambiar correo</span>
+            </button>
+          </div>
+
+          <div v-if="editMode === 'name'" class="form-group">
+            <label>Nuevo nombre</label>
             <input v-model="editName" type="text" placeholder="Tu nombre"/>
           </div>
-          <div class="form-group">
-            <label>Correo</label>
+          
+          <div v-if="editMode === 'email'" class="form-group">
+            <label>Nuevo correo</label>
             <input v-model="editEmail" type="email" placeholder="tu@correo.com"/>
           </div>
+          
           <div class="modal-actions">
             <button @click="closeEditModal" class="btn-cancel">Cancelar</button>
-            <button @click="saveProfile" class="btn-save" :disabled="saving">
+            <button @click="saveProfile" class="btn-save" :disabled="saving || !editMode">
               {{ saving ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
@@ -105,6 +133,7 @@ const userName = ref('')
 const userEmail = ref('')
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
+const editMode = ref('') // 'name' o 'email'
 const editName = ref('')
 const editEmail = ref('')
 const saving = ref(false)
@@ -129,6 +158,7 @@ const loadUser = async () => {
 }
 
 const openEditProfile = () => {
+  editMode.value = '' // Resetear modo
   editName.value = userName.value
   editEmail.value = userEmail.value
   showEditModal.value = true
@@ -137,12 +167,17 @@ const openEditProfile = () => {
 
 const closeEditModal = () => {
   showEditModal.value = false
+  editMode.value = ''
 }
 
 const saveProfile = async () => {
   saving.value = true
   try {
-    const data = await auth.updateProfile(editName.value, editEmail.value)
+    // Enviar solo el campo que se está editando
+    const nameToSend = editMode.value === 'name' ? editName.value : null
+    const emailToSend = editMode.value === 'email' ? editEmail.value : null
+    
+    const data = await auth.updateProfile(nameToSend, emailToSend)
     userName.value = data.user.name
     userEmail.value = data.user.email
     closeEditModal()
@@ -357,6 +392,46 @@ onUnmounted(() => {
   font-weight: 700;
   color: #e8f4fd;
   margin-bottom: 20px;
+}
+
+.edit-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.option-btn {
+  flex: 1;
+  padding: 14px;
+  background: rgba(125, 211, 252, 0.06);
+  border: 2px solid rgba(125, 211, 252, 0.2);
+  border-radius: 12px;
+  color: #7db8d4;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.option-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.option-btn:hover {
+  background: rgba(125, 211, 252, 0.1);
+  border-color: rgba(125, 211, 252, 0.4);
+}
+
+.option-btn.active {
+  background: rgba(14, 165, 233, 0.15);
+  border-color: #0ea5e9;
+  color: #7dd3fc;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
 }
 
 .form-group {

@@ -34,6 +34,12 @@ Route::post('auth/forgot-password', [PasswordResetController::class, 'sendCode']
 Route::post('auth/verify-code', [PasswordResetController::class, 'verifyCode']);
 Route::post('auth/reset-password', [PasswordResetController::class, 'resetPassword']);
 
+// Admin - Bloquear/Desbloquear usuarios (proteger con middleware admin en producción)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('admin/users/{userId}/block', [\App\Http\Controllers\Api\AdminController::class, 'blockUser']);
+    Route::post('admin/users/{userId}/unblock', [\App\Http\Controllers\Api\AdminController::class, 'unblockUser']);
+});
+
 // Nodos
 Route::get('nodos', [NodoController::class, 'index']);
 Route::post('nodos', [NodoController::class, 'store']);

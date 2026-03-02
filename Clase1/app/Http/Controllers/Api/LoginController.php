@@ -32,11 +32,28 @@ class LoginController extends Controller
             ], 401);
         }
 
+        // Validar estados
+        if ($user->status === 'bloqueado') {
+            return response()->json([
+                'message' => 'Tu cuenta ha sido bloqueada. Contacta al administrador.',
+            ], 403);
+        }
+
+        if ($user->status === 'eliminado') {
+            return response()->json([
+                'message' => 'Esta cuenta ha sido eliminada.',
+            ], 403);
+        }
+
         if (!$user->email_verified_at) {
             return response()->json([
                 'message' => 'Debes verificar tu correo electrónico primero',
             ], 403);
         }
+
+        // Actualizar estado a activo al iniciar sesión
+        $user->status = 'activo';
+        $user->save();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -47,12 +64,19 @@ class LoginController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'status' => $user->status,
             ],
         ], 200);
     }
 
     public function logout(Request $request)
     {
+        $user = $request->user();
+        
+        // Cambiar estado a inactivo al cerrar sesión
+        $user->status = 'inactivo';
+        $user->save();
+        
         $request->user()->currentAccessToken()->delete();
         
         return response()->json([
@@ -73,10 +97,20 @@ class LoginController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $request->user()->id,
-        ]);
+        $user = $request->user();
+        
+        // Validar solo los campos que se envían
+        $rules = [];
+        
+        if ($request->has('name')) {
+            $rules['name'] = 'required|string|max:255';
+        }
+        
+        if ($request->has('email')) {
+            $rules['email'] = 'required|email|unique:users,email,' . $user->id;
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json([
@@ -85,9 +119,15 @@ class LoginController extends Controller
             ], 422);
         }
 
-        $user = $request->user();
-        $user->name = $request->name;
-        $user->email = $request->email;
+        // Actualizar solo los campos enviados
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        
+        if ($request->has('email')) {
+            $user->email = $request->email;
+        }
+        
         $user->save();
 
         return response()->json([
@@ -96,6 +136,7 @@ class LoginController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'status' => $user->status,
             ],
         ], 200);
     }
@@ -103,8 +144,13 @@ class LoginController extends Controller
     public function deleteAccount(Request $request)
     {
         $user = $request->user();
+        
+        // Cambiar estado a eliminado
+        $user->status = 'eliminado';
+        $user->save();
+        
+        // Cerrar todas las sesiones
         $user->tokens()->delete();
-        $user->delete();
 
         return response()->json([
             'message' => 'Cuenta eliminada exitosamente',

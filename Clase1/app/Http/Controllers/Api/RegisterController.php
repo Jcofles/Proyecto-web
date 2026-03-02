@@ -158,6 +158,7 @@ class RegisterController extends Controller
                     'email' => $pending->email,
                     'password' => $pending->password,
                     'email_verified_at' => Carbon::now(),
+                    'status' => 'activo',
                 ]);
 
                 // borrar pendiente
