@@ -119,6 +119,50 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Modal Verificar Código -->
+    <Transition name="modal">
+      <div v-if="showCodeModal" class="modal-overlay" @click="closeCodeModal">
+        <div class="modal-box" @click.stop>
+          <h3>Verificar nuevo email</h3>
+          <p class="code-info">Hemos enviado un código de 6 dígitos a:</p>
+          <p class="pending-email">{{ pendingEmail }}</p>
+          <div class="form-group">
+            <label>Código de verificación</label>
+            <input 
+              v-model="verificationCode" 
+              type="text" 
+              placeholder="123456"
+              maxlength="6"
+              @keyup.enter="verifyCode"
+            />
+          </div>
+          <div class="modal-actions">
+            <button @click="closeCodeModal" class="btn-cancel">Cancelar</button>
+            <button @click="verifyCode" class="btn-save" :disabled="verifying">
+              {{ verifying ? 'Verificando...' : 'Verificar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Modal Éxito -->
+    <Transition name="modal">
+      <div v-if="showSuccessModal" class="modal-overlay" @click="closeSuccessModal">
+        <div class="modal-box success-modal" @click.stop>
+          <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          <h3>¡Éxito!</h3>
+          <p>{{ successMessage }}</p>
+          <button @click="closeSuccessModal" class="btn-save">
+            Aceptar
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -133,11 +177,17 @@ const userName = ref('')
 const userEmail = ref('')
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
+const showCodeModal = ref(false)
+const showSuccessModal = ref(false)
+const successMessage = ref('')
 const editMode = ref('') // 'name' o 'email'
 const editName = ref('')
 const editEmail = ref('')
+const verificationCode = ref('')
+const pendingEmail = ref('')
 const saving = ref(false)
 const deleting = ref(false)
+const verifying = ref(false)
 
 const toggleMenu = () => {
   isOpen.value = !isOpen.value
@@ -178,9 +228,18 @@ const saveProfile = async () => {
     const emailToSend = editMode.value === 'email' ? editEmail.value : null
     
     const data = await auth.updateProfile(nameToSend, emailToSend)
-    userName.value = data.user.name
-    userEmail.value = data.user.email
-    closeEditModal()
+    
+    // Si requiere verificación (cambio de email)
+    if (data.requires_verification) {
+      pendingEmail.value = data.new_email
+      closeEditModal()
+      showCodeModal.value = true
+    } else {
+      // Actualización directa (nombre)
+      userName.value = data.user.name
+      userEmail.value = data.user.email
+      closeEditModal()
+    }
   } catch (error) {
     alert(error.message || 'Error al actualizar perfil')
   } finally {
@@ -217,6 +276,41 @@ const deleteAccount = async () => {
   } finally {
     deleting.value = false
   }
+}
+
+const verifyCode = async () => {
+  if (!verificationCode.value || verificationCode.value.length !== 6) {
+    alert('Ingresa un código válido de 6 dígitos')
+    return
+  }
+  
+  verifying.value = true
+  try {
+    const data = await auth.verifyEmailChange(verificationCode.value)
+    userName.value = data.user.name
+    userEmail.value = data.user.email
+    showCodeModal.value = false
+    verificationCode.value = ''
+    pendingEmail.value = ''
+    
+    // Mostrar modal de éxito en lugar de alert
+    successMessage.value = 'Email actualizado exitosamente'
+    showSuccessModal.value = true
+  } catch (error) {
+    alert(error.message || 'Código incorrecto o expirado')
+  } finally {
+    verifying.value = false
+  }
+}
+
+const closeCodeModal = () => {
+  showCodeModal.value = false
+  verificationCode.value = ''
+}
+
+const closeSuccessModal = () => {
+  showSuccessModal.value = false
+  successMessage.value = ''
 }
 
 const handleClickOutside = (e) => {
@@ -538,6 +632,45 @@ onUnmounted(() => {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 24px;
+}
+
+.code-info {
+  color: #7db8d4;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.pending-email {
+  color: #7dd3fc;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: rgba(125, 211, 252, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.success-modal {
+  text-align: center;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  color: #10b981;
+  margin: 0 auto 16px;
+}
+
+.success-modal p {
+  color: #7db8d4;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.success-modal .btn-save {
+  width: 100%;
 }
 
 .menu-enter-active, .menu-leave-active {

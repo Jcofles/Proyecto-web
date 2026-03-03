@@ -99,6 +99,16 @@ export const auth = {
   },
 
   /**
+   * Verificar código de cambio de email
+   */
+  verifyEmailChange: async (code) => {
+    return request('/auth/verify-email-change', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+  },
+
+  /**
    * Eliminar cuenta
    */
   deleteAccount: async () => {

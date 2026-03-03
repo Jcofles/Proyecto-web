@@ -119,16 +119,52 @@ class LoginController extends Controller
             ], 422);
         }
 
-        // Actualizar solo los campos enviados
+        // Actualizar nombre (directo)
         if ($request->has('name')) {
             $user->name = $request->name;
+            $user->save();
         }
         
+        // Cambio de email requiere verificación
         if ($request->has('email')) {
-            $user->email = $request->email;
+            $newEmail = $request->email;
+            
+            // Generar código de 6 dígitos
+            $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            
+            // Guardar código temporal
+            \Illuminate\Support\Facades\DB::table('email_change_codes')->updateOrInsert(
+                ['user_id' => $user->id],
+                [
+                    'new_email' => $newEmail,
+                    'code' => $code,
+                    'expires_at' => \Carbon\Carbon::now()->addMinutes(15),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+            
+            // Enviar código al nuevo email
+            try {
+                \Illuminate\Support\Facades\Mail::raw(
+                    "Tu código de verificación para cambiar el email es: {$code}\n\nEste código expira en 15 minutos.",
+                    function ($message) use ($newEmail) {
+                        $message->to($newEmail)
+                                ->subject('Verificar cambio de email - ITFIP Maps');
+                    }
+                );
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => 'Error al enviar código de verificación',
+                ], 500);
+            }
+            
+            return response()->json([
+                'message' => 'Código de verificación enviado al nuevo email',
+                'requires_verification' => true,
+                'new_email' => $newEmail,
+            ], 200);
         }
-        
-        $user->save();
 
         return response()->json([
             'message' => 'Perfil actualizado exitosamente',
@@ -173,6 +209,58 @@ class LoginController extends Controller
 
         return response()->json([
             'message' => 'Cuenta eliminada exitosamente',
+        ], 200);
+    }
+
+    public function verifyEmailChange(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'code' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Código inválido',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = $request->user();
+        
+        $record = \Illuminate\Support\Facades\DB::table('email_change_codes')
+            ->where('user_id', $user->id)
+            ->where('code', $request->code)
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'message' => 'Código incorrecto',
+            ], 422);
+        }
+
+        if (\Carbon\Carbon::now()->isAfter($record->expires_at)) {
+            return response()->json([
+                'message' => 'Código expirado',
+            ], 422);
+        }
+
+        // Actualizar email
+        $user->email = $record->new_email;
+        $user->save();
+
+        // Eliminar código usado
+        \Illuminate\Support\Facades\DB::table('email_change_codes')
+            ->where('user_id', $user->id)
+            ->delete();
+
+        return response()->json([
+            'message' => 'Email actualizado exitosamente',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'status' => $user->status,
+            ],
         ], 200);
     }
 }
