@@ -146,15 +146,23 @@
 
             <!-- Error Message -->
             <Transition name="err-msg">
-              <div v-if="loginError" class="error-alert">
+              <div v-if="loginError" class="error-alert" :class="{ blocked: isBlocked }">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                   <circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 10.5v.5" stroke-linecap="round"/>
                 </svg>
-                <span>{{ loginError }}</span>
+                <div class="error-content">
+                  <span>{{ loginError }}</span>
+                  <button v-if="isBlocked" type="button" @click="startRecover" class="error-recover-link">
+                    ¿Olvidaste tu contraseña? Recupérala aquí
+                  </button>
+                  <router-link v-else to="/register" class="error-register-link">
+                    ¿No tienes cuenta? Regístrate aquí
+                  </router-link>
+                </div>
               </div>
             </Transition>
 
-            <button type="submit" class="btn" :disabled="loading">
+            <button type="submit" class="btn" :disabled="loading || isBlocked">
               <span class="btn-bg"/>
               <span class="btn-shimmer"/>
               <span class="btn-inner">
@@ -163,7 +171,7 @@
                     <path d="M9 3c-3.3 0-6 2.7-6 6 0 4.2 6 9 6 9s6-4.8 6-9c0-3.3-2.7-6-6-6z"/>
                     <circle cx="9" cy="9" r="2.2"/>
                   </svg>
-                  <span>Iniciar sesión</span>
+                  <span>{{ isBlocked ? 'Bloqueado' : 'Iniciar sesión' }}</span>
                   <svg class="btn-arr" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9h12M11 5l4 4-4 4"/>
                   </svg>
@@ -482,6 +490,10 @@ const showPw   = ref(false)
 const loading  = ref(false)
 const eveError = ref(false)
 const loginError = ref('')
+const remainingAttempts = ref(null)
+const isBlocked = ref(false)
+const blockCountdown = ref(0)
+let countdownInterval = null
 
 /* ── Recuperar ── */
 const recoverStep  = ref(1)    // 1..4
@@ -570,6 +582,10 @@ function startRecover() {
   recoverEmail.value = em.value  // pre-fill si ya lo escribió
   captchaChecked.value = false
   captchaLoading.value = false
+  // Limpiar estado de bloqueo al ir a recuperación
+  isBlocked.value = false
+  loginError.value = ''
+  if (countdownInterval) clearInterval(countdownInterval)
 }
 
 function backToLogin() {
@@ -590,6 +606,7 @@ function submitLogin() {
   
   loading.value = true
   loginError.value = ''
+  remainingAttempts.value = null
   
   auth.login(em.value, pw.value)
     .then(() => {
@@ -600,8 +617,45 @@ function submitLogin() {
       loading.value = false
       eveError.value = true
       setTimeout(() => eveError.value = false, 1800)
-      loginError.value = error.message || 'Credenciales incorrectas'
+      
+      // Manejar bloqueo
+      if (error.status === 429 && error.blocked) {
+        isBlocked.value = true
+        blockCountdown.value = error.remaining_seconds
+        startCountdown()
+        loginError.value = `Cuenta bloqueada. Intenta en ${formatTime(error.remaining_seconds)}`
+      } 
+      // Manejar intentos restantes
+      else if (error.status === 401 && error.remaining_attempts !== undefined) {
+        remainingAttempts.value = error.remaining_attempts
+        loginError.value = `Credenciales incorrectas. Te quedan ${error.remaining_attempts} intento${error.remaining_attempts !== 1 ? 's' : ''}`
+      }
+      else {
+        loginError.value = error.message || 'Credenciales incorrectas'
+      }
     })
+}
+
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval)
+  
+  countdownInterval = setInterval(() => {
+    blockCountdown.value--
+    loginError.value = `Cuenta bloqueada. Intenta en ${formatTime(blockCountdown.value)}`
+    
+    if (blockCountdown.value <= 0) {
+      clearInterval(countdownInterval)
+      isBlocked.value = false
+      loginError.value = ''
+      remainingAttempts.value = null
+    }
+  }, 1000)
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
 }
 
 function submitRecoverEmail() {
@@ -824,7 +878,7 @@ onMounted(()=>{
   addEventListener('resize',onResize)
 })
 onUnmounted(()=>{
-  cancelAnimationFrame(raf);clearInterval(clockInt);clearInterval(resendTimer)
+  cancelAnimationFrame(raf);clearInterval(clockInt);clearInterval(resendTimer);clearInterval(countdownInterval)
   removeEventListener('resize',onResize)
 })
 </script>
@@ -1037,9 +1091,15 @@ onUnmounted(()=>{
 @keyframes errIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── Error alert ── */
-.error-alert{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.32);border-radius:9px;margin-bottom:5px}
-.error-alert svg{width:16px;height:16px;color:var(--err);flex-shrink:0}
-.error-alert span{font-size:12px;font-weight:500;color:var(--err)}
+.error-alert{display:flex;align-items:flex-start;gap:8px;padding:10px 14px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.32);border-radius:9px;margin-bottom:5px}
+.error-alert.blocked{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.32)}
+.error-alert svg{width:16px;height:16px;color:var(--err);flex-shrink:0;margin-top:2px}
+.error-alert.blocked svg{color:#fbbf24}
+.error-content{display:flex;flex-direction:column;gap:6px;flex:1}
+.error-alert span{font-size:12px;font-weight:500;color:var(--err);display:block}
+.error-alert.blocked span{color:#d97706}
+.error-register-link,.error-recover-link{font-size:11px;font-weight:600;color:var(--b);text-decoration:underline;text-underline-offset:2px;transition:color .2s;background:none;border:none;cursor:pointer;padding:0;text-align:left;font-family:var(--F)}
+.error-register-link:hover,.error-recover-link:hover{color:var(--b2)}
 
 /* ── Forgot / Back buttons ── */
 .forgot-row{display:flex;justify-content:flex-end;margin-top:-4px}

@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class LoginController extends Controller
 {
@@ -24,11 +26,47 @@ class LoginController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $email = $request->email;
+        $user = User::where('email', $email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        // Si el usuario NO existe, retornar error genérico sin bloquear
+        if (!$user) {
             return response()->json([
                 'message' => 'Credenciales incorrectas',
+            ], 401);
+        }
+
+        // Verificar si está bloqueado (solo para usuarios existentes)
+        $attempt = DB::table('login_attempts')->where('email', $email)->first();
+        
+        if ($attempt && $attempt->blocked_until && Carbon::now()->lt($attempt->blocked_until)) {
+            $remainingSeconds = Carbon::now()->diffInSeconds($attempt->blocked_until);
+            return response()->json([
+                'message' => 'Cuenta temporalmente bloqueada por múltiples intentos fallidos',
+                'blocked' => true,
+                'remaining_seconds' => $remainingSeconds,
+            ], 429);
+        }
+
+        // Verificar contraseña
+        if (!Hash::check($request->password, $user->password)) {
+            // Incrementar intentos fallidos solo para usuarios existentes
+            $this->recordFailedAttempt($email);
+            
+            $attempt = DB::table('login_attempts')->where('email', $email)->first();
+            $remainingAttempts = 5 - $attempt->attempts;
+            
+            if ($remainingAttempts <= 0) {
+                return response()->json([
+                    'message' => 'Cuenta bloqueada por 15 minutos debido a múltiples intentos fallidos',
+                    'blocked' => true,
+                    'remaining_seconds' => 900,
+                ], 429);
+            }
+            
+            return response()->json([
+                'message' => 'Credenciales incorrectas',
+                'remaining_attempts' => $remainingAttempts,
             ], 401);
         }
 
@@ -55,6 +93,9 @@ class LoginController extends Controller
         $user->status = 'activo';
         $user->save();
 
+        // Login exitoso - limpiar intentos
+        DB::table('login_attempts')->where('email', $email)->delete();
+        
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -67,6 +108,34 @@ class LoginController extends Controller
                 'status' => $user->status,
             ],
         ], 200);
+    }
+
+    private function recordFailedAttempt($email)
+    {
+        $attempt = DB::table('login_attempts')->where('email', $email)->first();
+        
+        if (!$attempt) {
+            DB::table('login_attempts')->insert([
+                'email' => $email,
+                'attempts' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+        } else {
+            $newAttempts = $attempt->attempts + 1;
+            $blockedUntil = null;
+            
+            // Bloquear por 15 minutos después de 5 intentos
+            if ($newAttempts >= 5) {
+                $blockedUntil = Carbon::now()->addMinutes(15);
+            }
+            
+            DB::table('login_attempts')->where('email', $email)->update([
+                'attempts' => $newAttempts,
+                'blocked_until' => $blockedUntil,
+                'updated_at' => Carbon::now(),
+            ]);
+        }
     }
 
     public function logout(Request $request)
