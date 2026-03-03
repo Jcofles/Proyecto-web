@@ -145,12 +145,31 @@ class LoginController extends Controller
     {
         $user = $request->user();
         
+        // Guardar datos antes de modificar
+        $originalEmail = $user->email;
+        $userName = $user->name;
+        
+        // Modificar el email para liberar el original
+        $timestamp = time();
+        $user->email = "deleted_{$timestamp}_{$originalEmail}";
+        
         // Cambiar estado a eliminado
         $user->status = 'eliminado';
         $user->save();
         
         // Cerrar todas las sesiones
         $user->tokens()->delete();
+        
+        // Soft delete (marca deleted_at)
+        $user->delete();
+        
+        // Enviar email de notificación al correo original
+        try {
+            \Illuminate\Support\Facades\Mail::to($originalEmail)
+                ->send(new \App\Mail\AccountDeletedEmail($userName, $originalEmail));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error enviando email de cuenta eliminada: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Cuenta eliminada exitosamente',
