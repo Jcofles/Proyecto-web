@@ -18,7 +18,8 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'nombres',
+        'apellidos',
         'email',
         'password',
         'email_verified_at',
@@ -54,5 +55,11 @@ class User extends Authenticatable
     public function nodos()
     {
         return $this->hasMany(Nodo::class);
+    }
+
+    // Accessor para mantener compatibilidad con $user->name
+    public function getNameAttribute()
+    {
+        return trim($this->nombres . ' ' . $this->apellidos);
     }
 }

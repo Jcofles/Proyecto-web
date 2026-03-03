@@ -81,8 +81,13 @@
           </div>
 
           <div v-if="editMode === 'name'" class="form-group">
-            <label>Nuevo nombre</label>
-            <input v-model="editName" type="text" placeholder="Tu nombre"/>
+            <label>Nombres</label>
+            <input v-model="editNombres" type="text" placeholder="Tus nombres"/>
+          </div>
+          
+          <div v-if="editMode === 'name'" class="form-group">
+            <label>Apellidos</label>
+            <input v-model="editApellidos" type="text" placeholder="Tus apellidos"/>
           </div>
           
           <div v-if="editMode === 'email'" class="form-group">
@@ -175,13 +180,16 @@ const router = useRouter()
 const isOpen = ref(false)
 const userName = ref('')
 const userEmail = ref('')
+const userNombres = ref('')
+const userApellidos = ref('')
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const showCodeModal = ref(false)
 const showSuccessModal = ref(false)
 const successMessage = ref('')
 const editMode = ref('') // 'name' o 'email'
-const editName = ref('')
+const editNombres = ref('')
+const editApellidos = ref('')
 const editEmail = ref('')
 const verificationCode = ref('')
 const pendingEmail = ref('')
@@ -202,6 +210,8 @@ const loadUser = async () => {
     const data = await auth.getUser()
     userName.value = data.user.name
     userEmail.value = data.user.email
+    userNombres.value = data.user.nombres || ''
+    userApellidos.value = data.user.apellidos || ''
   } catch (error) {
     console.error('Error al cargar usuario:', error)
   }
@@ -209,7 +219,8 @@ const loadUser = async () => {
 
 const openEditProfile = () => {
   editMode.value = '' // Resetear modo
-  editName.value = userName.value
+  editNombres.value = userNombres.value
+  editApellidos.value = userApellidos.value
   editEmail.value = userEmail.value
   showEditModal.value = true
   closeMenu()
@@ -223,11 +234,12 @@ const closeEditModal = () => {
 const saveProfile = async () => {
   saving.value = true
   try {
-    // Enviar solo el campo que se está editando
-    const nameToSend = editMode.value === 'name' ? editName.value : null
+    // Enviar nombres y apellidos por separado
+    const nombresData = editMode.value === 'name' ? editNombres.value : null
+    const apellidosData = editMode.value === 'name' ? editApellidos.value : null
     const emailToSend = editMode.value === 'email' ? editEmail.value : null
     
-    const data = await auth.updateProfile(nameToSend, emailToSend)
+    const data = await auth.updateProfile(nombresData, apellidosData, emailToSend)
     
     // Si requiere verificación (cambio de email)
     if (data.requires_verification) {
@@ -238,6 +250,8 @@ const saveProfile = async () => {
       // Actualización directa (nombre)
       userName.value = data.user.name
       userEmail.value = data.user.email
+      userNombres.value = data.user.nombres || ''
+      userApellidos.value = data.user.apellidos || ''
       closeEditModal()
     }
   } catch (error) {
@@ -289,6 +303,8 @@ const verifyCode = async () => {
     const data = await auth.verifyEmailChange(verificationCode.value)
     userName.value = data.user.name
     userEmail.value = data.user.email
+    userNombres.value = data.user.nombres || ''
+    userApellidos.value = data.user.apellidos || ''
     showCodeModal.value = false
     verificationCode.value = ''
     pendingEmail.value = ''

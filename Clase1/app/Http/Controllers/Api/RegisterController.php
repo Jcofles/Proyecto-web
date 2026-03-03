@@ -154,7 +154,8 @@ class RegisterController extends Controller
 
                 // Crear registro definitivo en users
                 $user = User::create([
-                    'name' => trim($pending->nombres . ' ' . $pending->apellidos),
+                    'nombres' => $pending->nombres,
+                    'apellidos' => $pending->apellidos,
                     'email' => $pending->email,
                     'password' => $pending->password,
                     'email_verified_at' => Carbon::now(),

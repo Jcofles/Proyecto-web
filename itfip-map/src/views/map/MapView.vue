@@ -4,6 +4,9 @@ import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import UserMenu from '@/components/common/UserMenu.vue';
+import { useTheme } from '@/composables/useTheme';
+
+const { night, toggleTheme } = useTheme();
 
 const MAP_CENTER = [4.1563, -74.8975]; 
 const map = ref(null);
@@ -302,13 +305,26 @@ const detenerSimulacion = () => {
   if (marcadorUsuario.value && marcadorUsuario.value.dragging) marcadorUsuario.value.dragging.enable();
 };
 
-onMounted(async () => {
-  map.value = L.map('map', { maxZoom: 22 }).setView(MAP_CENTER, 18);
+const tileLayer = ref(null);
+
+const updateMapTheme = () => {
+  if (!map.value) return;
+  if (tileLayer.value) map.value.removeLayer(tileLayer.value);
   
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  const url = night.value 
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  
+  tileLayer.value = L.tileLayer(url, {
     maxZoom: 22,
     maxNativeZoom: 19
   }).addTo(map.value);
+};
+
+onMounted(async () => {
+  map.value = L.map('map', { maxZoom: 22 }).setView(MAP_CENTER, 18);
+  
+  updateMapTheme();
 
   datosPlanos.forEach(d => {
     L.polygon(d.coords, { color: "#555", fillColor: "#d32f2f", fillOpacity: 0.4 }).addTo(map.value);
@@ -337,17 +353,43 @@ onMounted(async () => {
     if (selectedDestino.value) calcularRuta();
   });
 });
+
+// Watch para cambiar el tema del mapa
+import { watch } from 'vue';
+watch(night, () => {
+  updateMapTheme();
+});
 </script>
 
 <template>
-  <div id="map"></div>
-  
-  <!-- User Menu -->
-  <div class="user-menu-container">
-    <UserMenu />
-  </div>
-  
-  <div class="hud">
+  <div class="wrap" :class="{ day: !night }">
+    <div id="map"></div>
+    
+    <!-- Theme Toggle -->
+    <div class="tog-area">
+      <span class="tog-lbl">{{ night ? 'NOCHE' : 'DÍA' }}</span>
+      <button class="tog" @click="toggleTheme" aria-label="Cambiar tema">
+        <div class="tog-track">
+          <div class="t-scene t-night" :class="{ vis: night }">
+            <span class="t-moon"></span>
+            <span class="t-s s1"></span><span class="t-s s2"></span><span class="t-s s3"></span>
+          </div>
+          <div class="t-scene t-day" :class="{ vis: !night }">
+            <span class="t-sun">
+              <span class="t-ray" v-for="r in 8" :key="r" :style="`--ri:${r}`"></span>
+            </span>
+          </div>
+          <span class="tog-thumb" :class="{ day: !night }"></span>
+        </div>
+      </button>
+    </div>
+    
+    <!-- User Menu -->
+    <div class="user-menu-container">
+      <UserMenu />
+    </div>
+    
+    <div class="hud">
     <div class="brand-box">
       <h1 class="itfip-title">PRUEBA PILOTO</h1>
       <p class="itfip-sub">ARRASTRA EL PUNTO AZUL</p>
@@ -377,42 +419,361 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+  </div>
 </template>
 
-<style>
-/* ... (Se mantiene exactamente igual tu estilo anterior) */
-#map { height: 100vh; width: 100vw; background: #000; }
-.hud { position: absolute; bottom: 30px; left: 30px; z-index: 1000; width: 350px; }
-.itfip-title { color: #fff; font-size: 28px; margin: 0; font-family: 'Arial Black'; text-shadow: 2px 2px #000; }
-.itfip-sub { color: #00ff00; margin: 0; font-weight: bold; font-size: 12px; text-transform: uppercase; }
-.controls { margin-top: 15px; }
-.gta-select { background: rgba(0,0,0,0.8); color: #fff; border: 2px solid #00ff00; padding: 12px; width: 100%; font-weight: bold; }
-.custom-div-icon { background: none; border: none; }
-.info-panel { margin-top: 12px; background: linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.4)); border: 1px solid rgba(0,255,0,0.25); padding: 12px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
-.stats { display:flex; justify-content:space-between; gap:12px; margin-bottom:10px; }
-.stat { color:#bfffbf; font-weight:700; font-size:13px; display:flex; flex-direction:column; }
-.stat .label { font-weight:600; color:#ccc; font-size:11px; margin-bottom:6px; text-transform:uppercase; }
-.start-btn { width:100%; padding:10px 12px; background: linear-gradient(90deg,#00bfff,#00ff88); border:none; color:#002200; font-weight:800; border-radius:8px; cursor:pointer; box-shadow: 0 6px 18px rgba(0,191,255,0.18), inset 0 -2px 0 rgba(255,255,255,0.06); transition:transform .12s ease, box-shadow .12s ease, opacity .12s; }
-.start-btn.running { background: linear-gradient(90deg,#ff5555,#ff9966); color:#fff; }
-.start-btn:active { transform:translateY(1px) scale(.997); }
-.progress { height:6px; background: rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; margin-top:10px; }
-.progress-fill { height:100%; background: linear-gradient(90deg,#00ff88,#00bfff); width:0%; transition: width 0.2s linear; border-radius:6px; box-shadow:0 0 8px rgba(0,255,136,0.12) inset; }
-.dest-icon { pointer-events: none; }
-.dest-pin { width:18px; height:28px; background: radial-gradient(circle at 35% 30%, #fff, #ffd1d1 40%, #ff4d4d 100%); border: 2px solid #fff; border-radius:9px 9px 9px 9px / 9px 9px 18px 18px; box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 18px rgba(255,77,77,0.12); transform:translateY(-8px); position:relative; animation: pulse 1.6s infinite ease-in-out; }
-@keyframes pulse { 0% { box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 0 rgba(255,77,77,0.12); transform:translateY(-8px) scale(1); } 50% { box-shadow: 0 14px 30px rgba(255,77,77,0.18), 0 0 32px rgba(255,77,77,0.08); transform:translateY(-10px) scale(1.05); } 100% { box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 0 rgba(255,77,77,0.12); transform:translateY(-8px) scale(1); } }
-@media (max-width:420px) { .hud { width: 92vw; left:4vw; right:4vw; bottom:20px; } .itfip-title { font-size:20px; } .gta-select { padding:10px; } }
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap');
+
+/* ═══ TOKENS ═══ */
+.wrap {
+  --b:#7dd3fc;--b2:#38bdf8;--b3:#0ea5e9;--b4:#0369a1;
+  --bg:#06080f;--surf:rgba(6,10,20,0.84);
+  --bo:rgba(125,211,252,0.16);--bo2:rgba(125,211,252,0.30);
+  --txt:#e8f4fd;--txt2:#7db8d4;--txt3:#3a5f78;
+  --inp:rgba(125,211,252,0.06);--inpf:rgba(125,211,252,0.12);
+  --F:'Manrope',sans-serif;--FM:'Share Tech Mono',monospace;
+}
+.wrap.day {
+  --b:#0ea5e9;--b2:#0284c7;--b3:#0369a1;--b4:#1e40af;
+  --bg:#c8dff0;--surf:rgba(195,224,244,0.90);
+  --bo:rgba(14,165,233,0.24);--bo2:rgba(14,165,233,0.42);
+  --txt:#071e30;--txt2:#0e4a72;--txt3:#3a7a9e;
+  --inp:rgba(14,165,233,0.12);--inpf:rgba(14,165,233,0.22);
+}
+
+.wrap {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--F);
+}
+
+#map { 
+  height: 100vh; 
+  width: 100vw; 
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+/* Posicionar controles de zoom de Leaflet */
+:deep(.leaflet-control-zoom) {
+  margin-left: 10px !important;
+  margin-top: 80px !important;
+}
+
+/* ── Toggle ── */
+.tog-area{position:fixed;top:18px;left:18px;z-index:1002;display:flex;align-items:center;gap:10px}
+.tog-lbl{font-family:var(--FM);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--b);text-shadow:0 0 10px rgba(125,211,252,.4);transition:color .4s;user-select:none}
+.wrap.day .tog-lbl{text-shadow:0 0 8px rgba(14,165,233,.3)}
+.tog{background:none;border:none;cursor:pointer;padding:0}
+.tog-track{position:relative;width:100px;height:42px;border-radius:21px;border:1px solid var(--bo2);overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .35s,box-shadow .35s;background:var(--surf);backdrop-filter:blur(10px)}
+.tog:hover .tog-track{border-color:var(--b);box-shadow:0 4px 22px rgba(125,211,252,.28),inset 0 1px 0 rgba(255,255,255,.07)}
+.t-scene{position:absolute;inset:0;opacity:0;transition:opacity .45s;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.t-scene.vis{opacity:1}
+.t-night{background:linear-gradient(135deg,#060c1e,#0a1430)}
+.t-day{background:linear-gradient(135deg,#62b8e8,#8ed3f2,#f0e28a)}
+.t-moon{width:18px;height:18px;border-radius:50%;background:#d8eaf8;box-shadow:-3px -2px 0 3px #0a1430,0 0 8px rgba(216,234,248,.5);position:relative}
+.t-s{position:absolute;border-radius:50%;background:#bde0fa;animation:twink 2s ease-in-out infinite}
+.s1{width:2px;height:2px;top:-8px;right:-4px}.s2{width:1.5px;height:1.5px;top:4px;right:-18px;animation-delay:.5s}.s3{width:2.5px;height:2.5px;bottom:-6px;right:-10px;animation-delay:.9s}
+@keyframes twink{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:1;transform:scale(1.6)}}
+.t-sun{position:relative;width:20px;height:20px;flex-shrink:0}
+.t-sun::before{content:'';position:absolute;top:2px;left:2px;right:2px;bottom:2px;border-radius:50%;background:radial-gradient(circle,#fffbe0,#fde047);box-shadow:0 0 8px #fbbf24,0 0 18px rgba(251,191,36,.5);animation:sPulse 3s ease-in-out infinite}
+@keyframes sPulse{0%,100%{box-shadow:0 0 6px #fbbf24}50%{box-shadow:0 0 14px #fbbf24,0 0 26px rgba(251,191,36,.4)}}
+.t-ray{position:absolute;width:2px;height:5px;background:#fde047;border-radius:1px;top:50%;left:50%;transform-origin:0 0;transform:translateX(-50%) rotate(calc(var(--ri)*45deg)) translateY(-13px)}
+.tog-thumb{position:absolute;top:4px;left:4px;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#c4e8fd,#7dd3fc);box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 10px rgba(125,211,252,.28);transition:left .45s cubic-bezier(.34,1.56,.64,1),background .45s,box-shadow .45s;z-index:2;pointer-events:none}
+.tog-thumb.day{left:calc(100% - 38px);background:linear-gradient(135deg,#fde68a,#fbbf24);box-shadow:0 2px 8px rgba(0,0,0,.25),0 0 12px rgba(251,191,36,.45)}
 
 .user-menu-container {
-  position: absolute;
+  position: fixed;
   top: 20px;
   right: 20px;
   z-index: 1001;
 }
 
-@media (max-width:420px) {
+.hud { 
+  position: fixed; 
+  bottom: 30px; 
+  left: 30px; 
+  z-index: 1000; 
+  width: 380px;
+}
+
+.brand-box {
+  background: var(--surf);
+  border: 1px solid var(--bo);
+  border-radius: 16px;
+  padding: 16px 20px;
+  backdrop-filter: blur(28px) saturate(155%);
+  box-shadow: 0 0 50px rgba(125,211,252,.07), 0 8px 32px rgba(0,0,0,.55), inset 0 1px 0 rgba(125,211,252,.07);
+  margin-bottom: 12px;
+}
+
+.itfip-title { 
+  color: var(--txt); 
+  font-size: 24px; 
+  margin: 0; 
+  font-family: var(--F);
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.itfip-sub { 
+  color: var(--b); 
+  margin: 4px 0 0 0; 
+  font-weight: 700; 
+  font-size: 10px; 
+  text-transform: uppercase;
+  font-family: var(--FM);
+  letter-spacing: 1.5px;
+  opacity: 0.8;
+}
+
+.controls { 
+  background: var(--surf);
+  border: 1px solid var(--bo);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(28px) saturate(155%);
+  box-shadow: 0 0 50px rgba(125,211,252,.07), 0 8px 32px rgba(0,0,0,.55), inset 0 1px 0 rgba(125,211,252,.07);
+}
+
+.gta-select { 
+  background: var(--inp);
+  color: var(--txt); 
+  border: 1px solid var(--bo);
+  border-radius: 11px;
+  padding: 12px 14px; 
+  width: 100%; 
+  font-weight: 600;
+  font-family: var(--F);
+  font-size: 13px;
+  outline: none;
+  transition: all .28s;
+  cursor: pointer;
+}
+
+.gta-select option {
+  background: var(--bg);
+  color: var(--txt);
+}
+
+.gta-select:hover,
+.gta-select:focus {
+  background: var(--inpf);
+  border-color: var(--b);
+  box-shadow: 0 0 0 3px rgba(125,211,252,.1);
+}
+
+.wrap.day .gta-select:hover,
+.wrap.day .gta-select:focus {
+  box-shadow: 0 0 0 3px rgba(14,165,233,.16);
+}
+
+.custom-div-icon { background: none; border: none; }
+
+.info-panel { 
+  margin-top: 14px;
+}
+
+.stats { 
+  display: flex; 
+  justify-content: space-between; 
+  gap: 12px; 
+  margin-bottom: 12px;
+}
+
+.stat { 
+  color: var(--txt); 
+  font-weight: 700; 
+  font-size: 13px; 
+  display: flex; 
+  flex-direction: column;
+  flex: 1;
+  background: var(--inp);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--bo);
+}
+
+.stat .label { 
+  font-weight: 600; 
+  color: var(--txt3); 
+  font-size: 10px; 
+  margin-bottom: 6px; 
+  text-transform: uppercase;
+  font-family: var(--FM);
+  letter-spacing: 0.5px;
+}
+
+.stat strong {
+  color: var(--b);
+  font-size: 15px;
+}
+
+.start-btn { 
+  width: 100%; 
+  padding: 13px 16px; 
+  background: linear-gradient(115deg, var(--b4) 0%, var(--b3) 40%, var(--b2) 80%, var(--b) 100%);
+  background-size: 200% 200%;
+  animation: gSh 4.5s ease infinite;
+  border: none; 
+  color: white; 
+  font-weight: 800; 
+  border-radius: 11px; 
+  cursor: pointer;
+  font-family: var(--F);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(14,165,233,.3);
+  transition: transform .2s, box-shadow .2s;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes gSh{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(14,165,233,.4);
+}
+
+.start-btn:active { 
+  transform: translateY(0);
+}
+
+.start-btn.running { 
+  background: linear-gradient(115deg, #dc2626 0%, #ef4444 40%, #f87171 80%, #fca5a5 100%);
+  background-size: 200% 200%;
+  animation: gSh 4.5s ease infinite;
+}
+
+.progress { 
+  height: 6px; 
+  background: var(--inp);
+  border: 1px solid var(--bo);
+  border-radius: 6px; 
+  overflow: hidden; 
+  margin-top: 12px;
+}
+
+.progress-fill { 
+  height: 100%; 
+  background: linear-gradient(90deg, var(--b2), var(--b)); 
+  width: 0%; 
+  transition: width 0.2s linear; 
+  border-radius: 6px;
+  box-shadow: 0 0 10px var(--b);
+}
+
+.dest-icon { pointer-events: none; }
+
+.dest-pin { 
+  width: 18px; 
+  height: 28px; 
+  background: radial-gradient(circle at 35% 30%, #fff, #ffd1d1 40%, #ff4d4d 100%); 
+  border: 2px solid #fff; 
+  border-radius: 9px 9px 9px 9px / 9px 9px 18px 18px; 
+  box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 18px rgba(255,77,77,0.12); 
+  transform: translateY(-8px); 
+  position: relative; 
+  animation: pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse { 
+  0% { box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 0 rgba(255,77,77,0.12); transform: translateY(-8px) scale(1); } 
+  50% { box-shadow: 0 14px 30px rgba(255,77,77,0.18), 0 0 32px rgba(255,77,77,0.08); transform: translateY(-10px) scale(1.05); } 
+  100% { box-shadow: 0 6px 18px rgba(255,77,77,0.25), 0 0 0 rgba(255,77,77,0.12); transform: translateY(-8px) scale(1); }
+}
+
+@media (max-width:768px) {
+  .hud { 
+    width: calc(100vw - 40px);
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+  }
+  
   .user-menu-container {
     top: 12px;
     right: 12px;
+    left: auto;
+  }
+  
+  .tog-area {
+    top: 12px;
+    left: 12px;
+  }
+}
+
+@media (max-width:480px) {
+  .hud { 
+    width: calc(100vw - 24px);
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+  
+  .user-menu-container {
+    top: 12px;
+    right: 12px;
+  }
+  
+  .brand-box {
+    padding: 12px 14px;
+  }
+  
+  .itfip-title { 
+    font-size: 18px;
+  }
+  
+  .itfip-sub {
+    font-size: 9px;
+  }
+  
+  .controls {
+    padding: 12px;
+  }
+  
+  .gta-select { 
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .stat {
+    padding: 8px 10px;
+  }
+  
+  .start-btn {
+    padding: 11px 14px;
+    font-size: 12px;
+  }
+  
+  .tog-track {
+    width: 80px;
+    height: 36px;
+  }
+  
+  .tog-thumb {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .tog-thumb.day {
+    left: calc(100% - 32px);
+  }
+  
+  .tog-lbl {
+    font-size: 8.5px;
   }
 }
 </style>  

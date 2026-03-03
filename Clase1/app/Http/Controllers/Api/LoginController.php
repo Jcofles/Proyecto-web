@@ -155,11 +155,14 @@ class LoginController extends Controller
 
     public function user(Request $request)
     {
+        $user = $request->user();
         return response()->json([
             'user' => [
-                'id' => $request->user()->id,
-                'name' => $request->user()->name,
-                'email' => $request->user()->email,
+                'id' => $user->id,
+                'name' => $user->name, // usa el accessor
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
+                'email' => $user->email,
             ],
         ], 200);
     }
@@ -190,7 +193,20 @@ class LoginController extends Controller
 
         // Actualizar nombre (directo)
         if ($request->has('name')) {
-            $user->name = $request->name;
+            // Si envían 'name', dividirlo en nombres y apellidos
+            $parts = explode(' ', $request->name, 2);
+            $user->nombres = $parts[0] ?? '';
+            $user->apellidos = $parts[1] ?? '';
+            $user->save();
+        }
+        
+        if ($request->has('nombres')) {
+            $user->nombres = $request->nombres;
+            $user->save();
+        }
+        
+        if ($request->has('apellidos')) {
+            $user->apellidos = $request->apellidos;
             $user->save();
         }
         
@@ -240,6 +256,8 @@ class LoginController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
                 'email' => $user->email,
                 'status' => $user->status,
             ],
@@ -327,6 +345,8 @@ class LoginController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'nombres' => $user->nombres,
+                'apellidos' => $user->apellidos,
                 'email' => $user->email,
                 'status' => $user->status,
             ],

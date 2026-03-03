@@ -85,11 +85,12 @@ export const auth = {
   },
 
   /**
-   * Actualizar perfil (permite actualizar solo nombre, solo email, o ambos)
+   * Actualizar perfil (permite actualizar nombres, apellidos y/o email)
    */
-  updateProfile: async (name, email) => {
+  updateProfile: async (nombres, apellidos, email) => {
     const body = {}
-    if (name) body.name = name
+    if (nombres) body.nombres = nombres
+    if (apellidos) body.apellidos = apellidos
     if (email) body.email = email
     
     return request('/auth/update-profile', {

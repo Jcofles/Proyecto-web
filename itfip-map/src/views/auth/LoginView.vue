@@ -244,6 +244,16 @@
               </div>
             </div>
 
+            <!-- Error Message -->
+            <Transition name="err-msg">
+              <div v-if="recoverError" class="error-alert">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 10.5v.5" stroke-linecap="round"/>
+                </svg>
+                <span>{{ recoverError }}</span>
+              </div>
+            </Transition>
+
             <button type="submit" class="btn" :disabled="!captchaChecked || recoverLoading">
               <span class="btn-bg"/>
               <span class="btn-shimmer"/>
@@ -317,6 +327,16 @@
                 {{ resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código' }}
               </button>
             </div>
+
+            <!-- Error Message -->
+            <Transition name="err-msg">
+              <div v-if="recoverError" class="error-alert">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 10.5v.5" stroke-linecap="round"/>
+                </svg>
+                <span>{{ recoverError }}</span>
+              </div>
+            </Transition>
 
             <button type="button" class="btn" :disabled="recoverCode.length < 4 || recoverLoading" @click="submitCode">
               <span class="btn-bg"/>
@@ -403,6 +423,16 @@
                 </div>
               </Transition>
             </div>
+
+            <!-- Error Message -->
+            <Transition name="err-msg">
+              <div v-if="recoverError" class="error-alert">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 10.5v.5" stroke-linecap="round"/>
+                </svg>
+                <span>{{ recoverError }}</span>
+              </div>
+            </Transition>
 
             <button type="submit" class="btn" :disabled="newPwErr || !newPw || !confirmNewPw || recoverLoading">
               <span class="btn-bg"/>
@@ -503,6 +533,7 @@ const recoverLoading = ref(false)
 const captchaChecked = ref(false)
 const captchaLoading = ref(false)
 const resendCooldown = ref(0)
+const recoverError = ref('')
 let resendTimer = null
 
 /* ── Nueva contraseña ── */
@@ -579,10 +610,10 @@ function toggleTheme() {
 function startRecover() {
   mode.value = 'recover'
   recoverStep.value = 1
-  recoverEmail.value = em.value  // pre-fill si ya lo escribió
+  recoverEmail.value = em.value
   captchaChecked.value = false
   captchaLoading.value = false
-  // Limpiar estado de bloqueo al ir a recuperación
+  recoverError.value = ''
   isBlocked.value = false
   loginError.value = ''
   if (countdownInterval) clearInterval(countdownInterval)
@@ -595,6 +626,7 @@ function backToLogin() {
   newPw.value = ''
   confirmNewPw.value = ''
   captchaChecked.value = false
+  recoverError.value = ''
 }
 
 function submitLogin() {
@@ -661,6 +693,7 @@ function formatTime(seconds) {
 function submitRecoverEmail() {
   if (!captchaChecked.value) return
   recoverLoading.value = true
+  recoverError.value = ''
   
   auth.forgotPassword(recoverEmail.value)
     .then(() => {
@@ -670,7 +703,9 @@ function submitRecoverEmail() {
     })
     .catch(error => {
       recoverLoading.value = false
-      alert(error.message || 'Error al enviar el código')
+      eveError.value = true
+      setTimeout(() => eveError.value = false, 1800)
+      recoverError.value = error.message || 'Error al enviar el código'
     })
 }
 
@@ -686,15 +721,19 @@ function resendCode() {
   auth.forgotPassword(recoverEmail.value)
     .then(() => {
       startResendCooldown()
+      recoverError.value = ''
     })
     .catch(error => {
-      alert(error.message || 'Error al reenviar el código')
+      eveError.value = true
+      setTimeout(() => eveError.value = false, 1800)
+      recoverError.value = error.message || 'Error al reenviar el código'
     })
 }
 
 function submitCode() {
   if (recoverCode.value.length < 4) return
   recoverLoading.value = true
+  recoverError.value = ''
   
   auth.verifyResetCode(recoverEmail.value, recoverCode.value)
     .then(() => {
@@ -703,7 +742,9 @@ function submitCode() {
     })
     .catch(error => {
       recoverLoading.value = false
-      alert(error.message || 'Código incorrecto')
+      eveError.value = true
+      setTimeout(() => eveError.value = false, 1800)
+      recoverError.value = error.message || 'Código incorrecto'
     })
 }
 
@@ -711,6 +752,7 @@ function submitNewPassword() {
   validateNewPw()
   if (newPwErr.value || !newPw.value || !confirmNewPw.value) return
   recoverLoading.value = true
+  recoverError.value = ''
   
   auth.resetPassword(recoverEmail.value, recoverCode.value, newPw.value, confirmNewPw.value)
     .then(() => {
@@ -719,7 +761,7 @@ function submitNewPassword() {
     })
     .catch(error => {
       recoverLoading.value = false
-      alert(error.message || 'Error al cambiar la contraseña')
+      recoverError.value = error.message || 'Error al cambiar la contraseña'
     })
 }
 
