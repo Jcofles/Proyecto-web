@@ -24,6 +24,16 @@
 
         <div class="menu-divider"/>
 
+        <button @click="goToDashboard" class="menu-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+
         <button @click="openEditProfile" class="menu-item">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 3l4 4L7 21H3v-4L17 3z"/>
@@ -269,6 +279,11 @@ const handleLogout = async () => {
     console.error('Error al cerrar sesión:', error)
     router.push('/login')
   }
+}
+
+const goToDashboard = () => {
+  router.push('/dashboard')
+  closeMenu()
 }
 
 const confirmDelete = () => {

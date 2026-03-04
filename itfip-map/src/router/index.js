@@ -4,7 +4,13 @@ import MapView from '../views/map/MapView.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/login'
+    redirect: '/dashboard'
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/DashboardView.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/map',
