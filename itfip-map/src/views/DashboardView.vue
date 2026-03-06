@@ -1,396 +1,489 @@
 <template>
-  <div class="dashboard-container" :class="{ 'dark-mode': night }">
-    <!-- Header con tema -->
-    <header class="dashboard-header">
+  <div class="dashboard" :class="{ 'dark-mode': night }">
+    <!-- Header -->
+    <header class="header">
       <div class="header-content">
         <div class="logo-section">
-          <h1>🏫 ITFIP Map</h1>
-          <p class="subtitle">Localización de Salones</p>
+          <i class="pi pi-map-marker" style="font-size: 2rem; color: var(--primary)"></i>
+          <div>
+            <h1>ITFIP Maps</h1>
+            <span class="subtitle">Sistema de Navegación Campus</span>
+          </div>
         </div>
         <div class="header-actions">
-          <button class="theme-btn" @click="toggleTheme" :title="night ? 'Modo Claro' : 'Modo Oscuro'">
-            {{ night ? '☀️' : '🌙' }}
-          </button>
+          <!-- Theme Toggle -->
+          <div class="tog-area">
+            <span class="tog-lbl">{{ night ? 'NOCHE' : 'DÍA' }}</span>
+            <button class="tog" @click="toggleTheme" aria-label="Cambiar tema">
+              <div class="tog-track">
+                <div class="t-scene t-night" :class="{ vis: night }">
+                  <span class="t-moon"></span>
+                  <span class="t-s s1"></span><span class="t-s s2"></span><span class="t-s s3"></span>
+                </div>
+                <div class="t-scene t-day" :class="{ vis: !night }">
+                  <span class="t-sun">
+                    <span class="t-ray" v-for="r in 8" :key="r" :style="`--ri:${r}`"></span>
+                  </span>
+                </div>
+                <span class="tog-thumb" :class="{ day: !night }"></span>
+              </div>
+            </button>
+          </div>
           <UserMenu />
         </div>
       </div>
     </header>
 
     <!-- Main Content -->
-    <main class="dashboard-main">
-      <div class="welcome-section">
-        <div class="greeting-card">
-          <h2>¡Bienvenido, {{ userName }}! 👋</h2>
-          <p>{{ getGreeting() }}</p>
+    <main class="main-content">
+      <!-- Welcome Banner -->
+      <div class="welcome-banner" :class="{ 'dark': night }">
+        <div class="banner-bg">
+          <div class="gradient-orb orb1"></div>
+          <div class="gradient-orb orb2"></div>
+          <div class="gradient-orb orb3"></div>
+          <div class="grid-pattern"></div>
+          <div class="particle" v-for="i in 30" :key="i" :style="{
+            left: Math.random() * 100 + '%',
+            top: Math.random() * 100 + '%',
+            animationDelay: Math.random() * 4 + 's',
+            animationDuration: (4 + Math.random() * 3) + 's'
+          }"></div>
+        </div>
+        <div class="welcome-content">
+          <div class="welcome-text">
+            <div class="greeting-icon">👋</div>
+            <h2>Bienvenido, {{ userName }}</h2>
+            <p>{{ getGreeting() }}</p>
+          </div>
+          <Button 
+            label="Ir al Mapa" 
+            icon="pi pi-map" 
+            @click="goToMap"
+            size="large"
+            class="map-button"
+            :severity="night ? 'secondary' : 'primary'"
+          />
         </div>
       </div>
 
-      <div class="dashboard-grid">
-        <!-- Sección Izquierda -->
-        <div class="left-section">
-          <!-- Quick Search -->
-          <div class="card search-card">
+      <!-- Quick Stats -->
+      <div class="stats-grid">
+        <div class="stat-card" v-for="(stat, index) in statsData" :key="index" :style="{ animationDelay: `${index * 0.1}s` }">
+          <div class="stat-icon-wrapper">
+            <i :class="stat.icon" class="stat-icon"></i>
+            <div class="stat-pulse"></div>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value">
+              <AnimatedNumber :value="stat.value" />
+            </span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+          <i class="pi pi-arrow-up-right stat-trend"></i>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="content-grid">
+        <!-- Quick Actions -->
+        <Card class="actions-card">
+          <template #title>
             <div class="card-header">
-              <h3>🔍 Buscar Salón</h3>
+              <i class="pi pi-bolt"></i>
+              <span>Acciones Rápidas</span>
             </div>
-            <div class="search-input-wrapper">
-              <input
+          </template>
+          <template #content>
+            <div class="actions-grid">
+              <Button 
+                icon="pi pi-map"
+                label="Mapa"
+                @click="goToMap"
+                severity="info"
+                raised
+              />
+              <Button 
+                icon="pi pi-user"
+                label="Perfil"
+                @click="showProfileModal = true"
+                severity="help"
+                raised
+              />
+              <Button 
+                icon="pi pi-cog"
+                label="Config"
+                @click="showSettingsModal = true"
+                severity="secondary"
+                raised
+              />
+              <Button 
+                icon="pi pi-sign-out"
+                label="Salir"
+                @click="logout"
+                severity="danger"
+                raised
+              />
+            </div>
+          </template>
+        </Card>
+
+        <!-- Search Section -->
+        <Card class="search-card">
+          <template #title>
+            <div class="card-header">
+              <i class="pi pi-search"></i>
+              <span>Buscar Salón</span>
+            </div>
+          </template>
+          <template #content>
+            <IconField iconPosition="left">
+              <InputIcon class="pi pi-search" />
+              <InputText 
                 v-model="searchQuery"
                 @keyup.enter="buscarSalon"
-                type="text"
+                @input="buscarSalon"
                 placeholder="Ej: Salón 101, Biblioteca..."
-                class="search-input"
+                class="w-full"
               />
-              <button @click="buscarSalon" class="search-btn">Buscar</button>
-            </div>
-            <div v-if="searchResults.length > 0" class="search-results">
+            </IconField>
+            
+            <TransitionGroup name="list" tag="div" class="search-results" v-if="searchResults.length > 0">
               <div
                 v-for="salon in searchResults"
                 :key="salon.id"
                 @click="irAlSalon(salon)"
                 class="result-item"
               >
-                <span class="result-icon">📍</span>
+                <Avatar :icon="getIconForType(salon.tipo)" shape="circle" />
                 <div class="result-info">
-                  <p class="result-name">{{ salon.nombre }}</p>
-                  <p class="result-distance">{{ salon.tipo || 'Ubicación' }}</p>
+                  <span class="result-name">{{ salon.nombre }}</span>
+                  <Chip :label="salon.tipo" class="result-chip" />
                 </div>
-                <span class="result-arrow">→</span>
+                <i class="pi pi-chevron-right"></i>
               </div>
-            </div>
-          </div>
+            </TransitionGroup>
+            <Message v-else-if="searchQuery" severity="info" :closable="false">
+              <template #icon>
+                <i class="pi pi-info-circle" style="font-size: 1.5rem"></i>
+              </template>
+              No se encontraron resultados
+            </Message>
+          </template>
+        </Card>
 
-          <!-- Favoritos -->
-          <div class="card favorites-card">
+        <!-- Favorites -->
+        <Card class="favorites-card">
+          <template #title>
             <div class="card-header">
-              <h3>⭐ Mis Favoritos</h3>
-              <button @click="editFavorites" class="edit-btn">Editar</button>
+              <i class="pi pi-star-fill"></i>
+              <span>Favoritos</span>
             </div>
-            <div v-if="favorites.length > 0" class="favorites-list">
+          </template>
+          <template #content>
+            <TransitionGroup name="list" tag="div" class="favorites-list" v-if="favorites.length > 0">
               <div
                 v-for="salon in favorites"
                 :key="salon.id"
-                @click="irAlSalon(salon)"
                 class="favorite-item"
               >
-                <span class="fav-icon">{{ salon.icon || '📍' }}</span>
-                <div class="fav-info">
-                  <p>{{ salon.nombre }}</p>
-                  <small>{{ salon.tipo }}</small>
+                <Avatar :icon="getIconForType(salon.tipo)" shape="circle" class="favorite-avatar" />
+                <div class="favorite-info" @click="irAlSalon(salon)">
+                  <span class="favorite-name">{{ salon.nombre }}</span>
+                  <Tag :value="salon.tipo" severity="success" icon="pi pi-star-fill" />
                 </div>
-                <button
+                <Button 
+                  icon="pi pi-heart-fill"
+                  rounded
+                  text
+                  severity="danger"
                   @click.stop="removeFavorite(salon.id)"
-                  class="remove-btn"
-                  title="Quitar de favoritos"
-                >
-                  ✕
-                </button>
+                  size="small"
+                  v-tooltip.left="'Quitar de favoritos'"
+                />
               </div>
-            </div>
-            <div v-else class="empty-state">
-              <p>No tienes favoritos aún</p>
-              <small>Agrega salones frecuentes para acceso rápido</small>
-            </div>
-          </div>
+            </TransitionGroup>
+            <InlineMessage v-else severity="info" class="w-full">
+              <div class="empty-state-inline">
+                <i class="pi pi-heart" style="font-size: 2rem"></i>
+                <p>Sin favoritos</p>
+                <small>Marca salones desde el mapa</small>
+              </div>
+            </InlineMessage>
+          </template>
+        </Card>
 
-          <!-- Búsquedas Recientes -->
-          <div class="card recent-card">
+        <!-- Recent Searches -->
+        <Card class="recents-card">
+          <template #title>
             <div class="card-header">
-              <h3>🕐 Recientes</h3>
-              <button v-if="recentSearches.length > 0" @click="clearRecent" class="clear-btn">Limpiar</button>
+              <i class="pi pi-history"></i>
+              <span>Recientes</span>
             </div>
-            <div v-if="recentSearches.length > 0" class="recent-list">
-              <div
-                v-for="salon in recentSearches.slice(0, 5)"
-                :key="salon.id"
-                @click="irAlSalon(salon)"
-                class="recent-item"
-              >
-                <span class="recent-time">{{ getTimeAgo(salon.timestamp) }}</span>
-                <p>{{ salon.nombre }}</p>
+          </template>
+          <template #content>
+            <Timeline :value="recentSearches.slice(0, 5)" v-if="recentSearches.length > 0" class="recent-timeline">
+              <template #marker="slotProps">
+                <span class="timeline-marker">
+                  <i class="pi pi-clock"></i>
+                </span>
+              </template>
+              <template #content="slotProps">
+                <div @click="irAlSalon(slotProps.item)" class="recent-item">
+                  <span class="recent-name">{{ slotProps.item.nombre }}</span>
+                  <Badge :value="getTimeAgo(slotProps.item.timestamp)" severity="info" />
+                </div>
+              </template>
+            </Timeline>
+            <InlineMessage v-else severity="info" class="w-full">
+              <div class="empty-state-inline">
+                <i class="pi pi-calendar" style="font-size: 2rem"></i>
+                <p>Sin búsquedas recientes</p>
               </div>
-            </div>
-            <div v-else class="empty-state">
-              <p>Sin búsquedas recientes</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sección Derecha -->
-        <div class="right-section">
-          <!-- Perfil del Usuario -->
-          <div class="card profile-card">
-            <div class="profile-header">
-              <div class="avatar">
-                {{ getInitials() }}
-              </div>
-              <div class="profile-info">
-                <h3>{{ userName }}</h3>
-                <p>{{ userEmail }}</p>
-                <span :class="['status-badge', userStatus]">{{ userStatus === 'active' ? '✓ Activo' : 'Inactivo' }}</span>
-              </div>
-            </div>
-            <div class="profile-actions">
-              <button @click="showProfileModal = true" class="action-btn primary">
-                👤 Ver Perfil
-              </button>
-              <button @click="goToMap" class="action-btn">
-                🗺️ Ir al Mapa
-              </button>
-            </div>
-          </div>
-
-          <!-- Estadísticas -->
-          <div class="card stats-card">
-            <h3 class="card-header">📊 Tu Actividad</h3>
-            <div class="stats-grid">
-              <div class="stat-item">
-                <span class="stat-value">{{ stats.searchCount }}</span>
-                <span class="stat-label">Búsquedas</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{{ stats.favoritesCount }}</span>
-                <span class="stat-label">Favoritos</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{{ stats.visitedCount }}</span>
-                <span class="stat-label">Visitados</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{{ stats.streakDays }}</span>
-                <span class="stat-label">Días Activo</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Acciones Rápidas -->
-          <div class="card actions-card">
-            <h3 class="card-header">⚡ Acciones Rápidas</h3>
-            <div class="quick-actions">
-              <button @click="goToMap" class="action-item">
-                <span class="action-icon">🗺️</span>
-                <span>Abrir Mapa</span>
-              </button>
-              <button @click="showSettingsModal = true" class="action-item">
-                <span class="action-icon">⚙️</span>
-                <span>Configuración</span>
-              </button>
-              <button @click="showHelpModal = true" class="action-item">
-                <span class="action-icon">❓</span>
-                <span>Ayuda</span>
-              </button>
-              <button @click="logout" class="action-item danger">
-                <span class="action-icon">🚪</span>
-                <span>Cerrar Sesión</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Campus Info -->
-          <div class="card info-card">
-            <h3 class="card-header">ℹ️ Info Campus</h3>
-            <div class="info-content">
-              <div class="info-item">
-                <span class="info-label">Institución:</span>
-                <span class="info-value">ITFIP</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Ubicación:</span>
-                <span class="info-value">Bogotá, Colombia</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Salones Mapeados:</span>
-                <span class="info-value">{{ stats.totalRooms }}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Versión:</span>
-                <span class="info-value">1.0.0</span>
-              </div>
-            </div>
-          </div>
-        </div>
+            </InlineMessage>
+            <Button 
+              v-if="recentSearches.length > 0"
+              icon="pi pi-trash"
+              label="Limpiar Historial"
+              @click="clearRecent"
+              outlined
+              severity="danger"
+              size="small"
+              class="mt-3 w-full"
+            />
+          </template>
+        </Card>
       </div>
     </main>
 
-    <!-- Modales -->
-    <!-- Modal Perfil -->
-    <div v-if="showProfileModal" class="modal-overlay" @click.self="showProfileModal = false">
-      <div class="modal-card profile-modal">
-        <div class="modal-header">
-          <h2>Mi Perfil</h2>
-          <button @click="showProfileModal = false" class="close-btn">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="profile-form">
-            <div class="form-group">
-              <label>Nombres</label>
-              <input v-model="profileData.nombres" type="text" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Apellidos</label>
-              <input v-model="profileData.apellidos" type="text" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input v-model="profileData.email" type="email" class="form-input" />
-            </div>
-            <div class="form-actions">
-              <button @click="saveProfile" class="btn-primary">Guardar Cambios</button>
-              <button @click="showProfileModal = false" class="btn-secondary">Cancelar</button>
-            </div>
-          </div>
+    <!-- Profile Dialog -->
+    <Dialog 
+      v-model:visible="showProfileModal" 
+      header="Mi Perfil"
+      :modal="true"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+    >
+      <div class="profile-content">
+        <Avatar 
+          :label="getInitials()" 
+          size="xlarge" 
+          class="profile-avatar"
+        />
+        <div class="profile-data">
+          <h3>{{ userName }}</h3>
+          <p>{{ userEmail }}</p>
+          <Tag 
+            :value="userStatus === 'active' ? '✓ Activo' : 'Inactivo'" 
+            :severity="userStatus === 'active' ? 'success' : 'danger'"
+          />
         </div>
       </div>
-    </div>
+      
+      <Divider />
+      
+      <div class="form-field">
+        <label>Nombres</label>
+        <InputText v-model="profileData.nombres" />
+      </div>
+      <div class="form-field">
+        <label>Apellidos</label>
+        <InputText v-model="profileData.apellidos" />
+      </div>
+      <div class="form-field">
+        <label>Email</label>
+        <InputText v-model="profileData.email" type="email" />
+      </div>
+      
+      <template #footer>
+        <Button 
+          label="Cancelar"
+          icon="pi pi-times"
+          @click="showProfileModal = false"
+          text
+        />
+        <Button 
+          label="Guardar"
+          icon="pi pi-check"
+          @click="saveProfile"
+        />
+      </template>
+    </Dialog>
 
-    <!-- Modal Configuración -->
-    <div v-if="showSettingsModal" class="modal-overlay" @click.self="showSettingsModal = false">
-      <div class="modal-card settings-modal">
-        <div class="modal-header">
-          <h2>Configuración</h2>
-          <button @click="showSettingsModal = false" class="close-btn">✕</button>
+    <!-- Settings Dialog -->
+    <Dialog 
+      v-model:visible="showSettingsModal" 
+      header="Configuración"
+      :modal="true"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+    >
+      <div class="settings-group">
+        <h4>Preferencias</h4>
+        <div class="checkbox-item">
+          <Checkbox 
+            v-model="settings.darkMode"
+            binary
+            inputId="darkMode"
+          />
+          <label for="darkMode">Modo Oscuro</label>
         </div>
-        <div class="modal-body">
-          <div class="settings-group">
-            <h3>Preferencias Visuales</h3>
-            <label class="setting-item">
-              <input v-model="settings.darkMode" type="checkbox" />
-              <span>Modo Oscuro</span>
-            </label>
-          </div>
-          <div class="settings-group">
-            <h3>Notificaciones</h3>
-            <label class="setting-item">
-              <input v-model="settings.notifications" type="checkbox" />
-              <span>Notificaciones Habilitadas</span>
-            </label>
-            <label class="setting-item">
-              <input v-model="settings.emailUpdates" type="checkbox" />
-              <span>Recibir Actualizaciones por Email</span>
-            </label>
-          </div>
-          <div class="settings-group danger">
-            <h3>Zona de Peligro</h3>
-            <button @click="confirmDeleteAccount" class="btn-danger">
-              🗑️ Eliminar Cuenta
-            </button>
-            <small>Esta acción no se puede deshacer</small>
-          </div>
+        <div class="checkbox-item">
+          <Checkbox 
+            v-model="settings.notifications"
+            binary
+            inputId="notifications"
+          />
+          <label for="notifications">Notificaciones</label>
         </div>
       </div>
-    </div>
-
-    <!-- Modal Ayuda -->
-    <div v-if="showHelpModal" class="modal-overlay" @click.self="showHelpModal = false">
-      <div class="modal-card help-modal">
-        <div class="modal-header">
-          <h2>Centro de Ayuda</h2>
-          <button @click="showHelpModal = false" class="close-btn">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="help-section">
-            <h3>❓ ¿Cómo usar el mapa?</h3>
-            <p>Usa la búsqueda de salones o navega en el mapa interactivo para ubicar cualquier aula del campus.</p>
-          </div>
-          <div class="help-section">
-            <h3>⭐ Agregar Favoritos</h3>
-            <p>Desde el mapa, puedes marcar salones como favoritos para acceso rápido desde el dashboard.</p>
-          </div>
-          <div class="help-section">
-            <h3>🗺️ Rutas y Navegación</h3>
-            <p>El mapa puede mostrar rutas entre ubicaciones. Ten en cuenta que los tiempos son aproximados.</p>
-          </div>
-          <div class="help-section">
-            <h3>📞 Soporte</h3>
-            <p>Para problemas técnicos, contacta al IT del ITFIP o reporta el error en el formulario de contacto.</p>
-          </div>
-        </div>
+      
+      <Divider />
+      
+      <div class="settings-group danger">
+        <h4>Zona de Peligro</h4>
+        <Button 
+          label="Eliminar Cuenta"
+          icon="pi pi-trash"
+          severity="danger"
+          @click="confirmDeleteAccount"
+          outlined
+        />
       </div>
-    </div>
+      
+      <template #footer>
+        <Button 
+          label="Cerrar"
+          icon="pi pi-times"
+          @click="showSettingsModal = false"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserMenu from '@/components/common/UserMenu.vue'
 import { useTheme } from '@/composables/useTheme'
 import { auth } from '@/services/api'
 
+import Card from 'primevue/card'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
+import Dialog from 'primevue/dialog'
+import Tag from 'primevue/tag'
+import Avatar from 'primevue/avatar'
+import Divider from 'primevue/divider'
+import Checkbox from 'primevue/checkbox'
+import Chip from 'primevue/chip'
+import Message from 'primevue/message'
+import InlineMessage from 'primevue/inlinemessage'
+import Timeline from 'primevue/timeline'
+import Badge from 'primevue/badge'
+
 const router = useRouter()
 const { night, toggleTheme } = useTheme()
 
-// Estados
 const userName = ref('Usuario')
-const userEmail = ref('user@example.com')
+const userEmail = ref('user@itfip.edu.co')
 const userStatus = ref('active')
 const searchQuery = ref('')
 const showProfileModal = ref(false)
 const showSettingsModal = ref(false)
-const showHelpModal = ref(false)
 
-// Datos del usuario
 const profileData = ref({
   nombres: '',
   apellidos: '',
   email: ''
 })
 
-// Configuración
 const settings = ref({
   darkMode: false,
-  notifications: true,
-  emailUpdates: false
+  notifications: true
 })
 
-// Datos de búsqueda
 const searchResults = ref([])
 const allSalones = ref([
-  { id: 1, nombre: 'Salón 101', tipo: 'Aula de Clase', icon: '📚' },
-  { id: 2, nombre: 'Salón 102', tipo: 'Aula de Clase', icon: '📚' },
-  { id: 3, nombre: 'Salón 103', tipo: 'Aula de Clase', icon: '📚' },
-  { id: 4, nombre: 'Biblioteca', tipo: 'Recurso Académico', icon: '📖' },
-  { id: 5, nombre: 'Cafetería', tipo: 'Servicio', icon: '☕' },
-  { id: 6, nombre: 'Laboratorio Sistemas', tipo: 'Laboratorio', icon: '💻' },
-  { id: 7, nombre: 'Laboratorio Electrónica', tipo: 'Laboratorio', icon: '🔧' },
-  { id: 8, nombre: 'Gimnasio', tipo: 'Deporte', icon: '🏋️' },
-  { id: 9, nombre: 'Auditorio', tipo: 'Evento', icon: '🎭' },
-  { id: 10, nombre: 'Parqueadero', tipo: 'Servicio', icon: '🅿️' },
+  { id: 1, nombre: 'Salón 101', tipo: 'Aula', icon: '📚' },
+  { id: 2, nombre: 'Salón 102', tipo: 'Aula', icon: '📚' },
+  { id: 3, nombre: 'Biblioteca', tipo: 'Recurso', icon: '📖' },
+  { id: 4, nombre: 'Cafetería', tipo: 'Servicio', icon: '☕' },
+  { id: 5, nombre: 'Lab. Sistemas', tipo: 'Laboratorio', icon: '💻' },
+  { id: 6, nombre: 'Gimnasio', tipo: 'Deporte', icon: '🏋️' },
+  { id: 7, nombre: 'Auditorio', tipo: 'Evento', icon: '🎭' },
 ])
 
-// Favoritos
 const favorites = ref([
-  { id: 1, nombre: 'Salón 101', tipo: 'Aula de Clase', icon: '📚' },
-  { id: 6, nombre: 'Laboratorio Sistemas', tipo: 'Laboratorio', icon: '💻' }
+  { id: 1, nombre: 'Salón 101', tipo: 'Aula' },
+  { id: 5, nombre: 'Lab. Sistemas', tipo: 'Laboratorio' }
 ])
 
-// Búsquedas Recientes
 const recentSearches = ref([
-  { id: 1, nombre: 'Salón 101', tipo: 'Aula', timestamp: Date.now() - 3600000 },
-  { id: 6, nombre: 'Laboratorio Sistemas', tipo: 'Lab', timestamp: Date.now() - 7200000 },
-  { id: 4, nombre: 'Biblioteca', tipo: 'Recurso', timestamp: Date.now() - 86400000 }
+  { id: 1, nombre: 'Salón 101', timestamp: Date.now() - 3600000 },
+  { id: 5, nombre: 'Lab. Sistemas', timestamp: Date.now() - 7200000 }
 ])
 
-// Estadísticas
 const stats = ref({
   searchCount: 24,
   favoritesCount: 2,
   visitedCount: 8,
-  streakDays: 5,
   totalRooms: 45
 })
 
-// Funciones
+const statsData = ref([
+  { icon: 'pi pi-search', value: 24, label: 'Búsquedas' },
+  { icon: 'pi pi-star-fill', value: 2, label: 'Favoritos' },
+  { icon: 'pi pi-map-marker', value: 8, label: 'Visitados' },
+  { icon: 'pi pi-building', value: 45, label: 'Salones' }
+])
+
+const AnimatedNumber = {
+  props: ['value'],
+  setup(props) {
+    const displayValue = ref(0)
+    const animate = () => {
+      const duration = 1000
+      const start = Date.now()
+      const startValue = displayValue.value
+      const endValue = props.value
+      const update = () => {
+        const now = Date.now()
+        const progress = Math.min((now - start) / duration, 1)
+        displayValue.value = Math.floor(startValue + (endValue - startValue) * progress)
+        if (progress < 1) requestAnimationFrame(update)
+      }
+      update()
+    }
+    onMounted(animate)
+    return { displayValue }
+  },
+  template: '<span>{{ displayValue }}</span>'
+}
+
 const getGreeting = () => {
   const hour = new Date().getHours()
   if (hour < 12) return '☀️ Buenos días. ¿A dónde vamos hoy?'
-  if (hour < 18) return '🌞 Buenas tardes. Sigue explorando el campus.'
-  return '🌙 Buenas noches. Acabas de empezar a explorar.'
+  if (hour < 18) return '🌞 Buenas tardes.'
+  return '🌙 Buenas noches.'
 }
 
 const getInitials = () => {
   const names = userName.value.split(' ')
   return names.map(n => n[0]).join('').toUpperCase()
+}
+
+const getIconForType = (tipo) => {
+  const icons = {
+    'Aula': 'pi pi-book',
+    'Laboratorio': 'pi pi-desktop',
+    'Recurso': 'pi pi-bookmark',
+    'Servicio': 'pi pi-shopping-bag',
+    'Deporte': 'pi pi-heart',
+    'Evento': 'pi pi-calendar'
+  }
+  return icons[tipo] || 'pi pi-map-marker'
 }
 
 const buscarSalon = () => {
@@ -407,7 +500,6 @@ const buscarSalon = () => {
 }
 
 const irAlSalon = (salon) => {
-  // Agregar a recientes
   const existing = recentSearches.value.findIndex(s => s.id === salon.id)
   if (existing > -1) {
     recentSearches.value.splice(existing, 1)
@@ -417,14 +509,9 @@ const irAlSalon = (salon) => {
     timestamp: Date.now()
   })
   
-  // Incrementar estadística
   stats.value.searchCount++
   
-  // Guardar en localStorage
-  localStorage.setItem('lastSearch', JSON.stringify(salon))
   localStorage.setItem('selectedDestino', salon.nombre)
-  
-  // Ir al mapa
   router.push('/map')
 }
 
@@ -433,12 +520,8 @@ const removeFavorite = (id) => {
   stats.value.favoritesCount--
 }
 
-const editFavorites = () => {
-  alert('Edita tus favoritos desde el mapa')
-}
-
 const clearRecent = () => {
-  if (confirm('¿Limpiar historial de búsquedas?')) {
+  if (confirm('¿Limpiar historial?')) {
     recentSearches.value = []
   }
 }
@@ -449,30 +532,25 @@ const goToMap = () => {
 
 const saveProfile = async () => {
   try {
-    // Aquí iría la call al API
-    // await auth.updateProfile(profileData.value.nombres, profileData.value.apellidos, profileData.value.email)
-    alert('✓ Perfil actualizado correctamente')
+    alert('✓ Perfil actualizado')
     showProfileModal.value = false
   } catch (err) {
-    alert('Error al actualizar perfil: ' + err.message)
+    alert('Error: ' + err.message)
   }
 }
 
 const confirmDeleteAccount = () => {
-  if (confirm('⚠️ ¿Estás seguro? Esta acción eliminará permanentemente tu cuenta y todos tus datos.')) {
-    if (confirm('⚠️ Por favor confirma nuevamente para continuar')) {
-      deleteAccount()
-    }
+  if (confirm('⚠️ ¿Eliminar cuenta permanentemente?')) {
+    deleteAccount()
   }
 }
 
 const deleteAccount = async () => {
   try {
     await auth.deleteAccount()
-    alert('Cuenta eliminada correctamente')
     router.push('/login')
   } catch (err) {
-    alert('Error al eliminar cuenta: ' + err.message)
+    alert('Error: ' + err.message)
   }
 }
 
@@ -481,40 +559,33 @@ const logout = async () => {
     await auth.logout()
     router.push('/login')
   } catch (err) {
-    console.error('Error al cerrar sesión:', err)
     localStorage.removeItem('auth_token')
     router.push('/login')
   }
 }
 
 const getTimeAgo = (timestamp) => {
-  const now = Date.now()
-  const diff = now - timestamp
+  const diff = Date.now() - timestamp
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
   
-  if (minutes < 1) return 'Justo ahora'
-  if (minutes < 60) return `Hace ${minutes}m`
-  if (hours < 24) return `Hace ${hours}h`
-  return `Hace ${days}d`
+  if (minutes < 1) return 'Ahora'
+  if (minutes < 60) return `${minutes}m`
+  if (hours < 24) return `${hours}h`
+  return `${days}d`
 }
 
-// Cargar datos al montar
 onMounted(async () => {
   try {
     const response = await auth.getUser()
-    
-    // Manejar diferentes estructuras de respuesta
     const user = response.user || response.data || response
     
-    // Construir nombre completo
     const nombres = user.nombres || user.name || ''
     const apellidos = user.apellidos || ''
     const nombreCompleto = `${nombres} ${apellidos}`.trim()
     
-    // Si tenemos nombres, usar eso; si no, usar nombre por defecto
-    if (nombreCompleto && nombreCompleto.length > 0) {
+    if (nombreCompleto) {
       userName.value = nombreCompleto
     }
     
@@ -526,41 +597,38 @@ onMounted(async () => {
       email: user.email || ''
     }
   } catch (err) {
-    console.error('Error cargando usuario:', err)
-    // Usar valores por defecto si hay error
-    userName.value = 'Usuario'
-    userEmail.value = 'usuario@itfip.edu.co'
+    console.error('Error:', err)
   }
 })
 </script>
 
 <style scoped>
-.dashboard-container {
+.dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  transition: background 0.3s ease;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e1e8f0 100%);
+  transition: background 0.3s;
 }
 
-.dashboard-container.dark-mode {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-  color: #e5e7eb;
+.dashboard.dark-mode {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #f1f5f9;
 }
 
-/* Header */
-.dashboard-header {
+.header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-bottom: 2px solid #e5e7eb;
-  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+  padding: 1rem 0;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.dark-mode .dashboard-header {
-  background: rgba(31, 41, 55, 0.95);
-  border-bottom-color: #374151;
+.dark-mode .header {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: rgba(71, 85, 105, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .header-content {
@@ -572,23 +640,28 @@ onMounted(async () => {
   align-items: center;
 }
 
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .logo-section h1 {
   margin: 0;
-  font-size: 1.8rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.5rem;
+  color: #1f2937;
+  font-weight: 700;
 }
 
-.logo-section .subtitle {
-  margin: 0.25rem 0 0 0;
-  color: #6b7280;
-  font-size: 0.9rem;
+.dark-mode .logo-section h1 {
+  color: #f3f4f6;
 }
 
-.dark-mode .logo-section .subtitle {
+.subtitle {
+  font-size: 0.75rem;
   color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .header-actions {
@@ -597,1004 +670,761 @@ onMounted(async () => {
   align-items: center;
 }
 
-.theme-btn {
-  background: none;
-  border: 2px solid #e5e7eb;
-  padding: 0.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
-}
+/* Theme Toggle */
+.tog-area { display: flex; align-items: center; gap: 10px; }
+.tog-lbl { font-family: 'Share Tech Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #667eea; text-shadow: 0 0 10px rgba(102, 126, 234, 0.4); transition: color 0.4s; user-select: none; }
+.dark-mode .tog-lbl { color: #8b5cf6; text-shadow: 0 0 8px rgba(139, 92, 246, 0.3); }
+.tog { background: none; border: none; cursor: pointer; padding: 0; }
+.tog-track { position: relative; width: 80px; height: 36px; border-radius: 18px; border: 1px solid rgba(203, 213, 225, 0.5); overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: border-color 0.3s, box-shadow 0.3s; }
+.dark-mode .tog-track { border-color: rgba(71, 85, 105, 0.5); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+.tog:hover .tog-track { border-color: #667eea; box-shadow: 0 2px 12px rgba(102, 126, 234, 0.3); }
+.t-scene { position: absolute; inset: 0; opacity: 0; transition: opacity 0.4s; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+.t-scene.vis { opacity: 1; }
+.t-night { background: linear-gradient(135deg, #060c1e, #0a1430); }
+.t-day { background: linear-gradient(135deg, #62b8e8, #8ed3f2, #f0e28a); }
+.t-moon { width: 14px; height: 14px; border-radius: 50%; background: #d8eaf8; box-shadow: -2px -1px 0 2px #0a1430, 0 0 6px rgba(216, 234, 248, 0.5); position: relative; }
+.t-s { position: absolute; border-radius: 50%; background: #bde0fa; animation: twink 2s ease-in-out infinite; }
+.s1 { width: 1.5px; height: 1.5px; top: -6px; right: -3px; animation-delay: 0s; }
+.s2 { width: 1px; height: 1px; top: 3px; right: -14px; animation-delay: 0.5s; }
+.s3 { width: 2px; height: 2px; bottom: -5px; right: -8px; animation-delay: 0.9s; }
+@keyframes twink { 0%, 100% { opacity: 0.25; transform: scale(1); } 50% { opacity: 1; transform: scale(1.6); } }
+.t-sun { position: relative; width: 16px; height: 16px; flex-shrink: 0; }
+.t-sun::before { content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px; border-radius: 50%; background: radial-gradient(circle, #fffbe0, #fde047); box-shadow: 0 0 6px #fbbf24, 0 0 12px rgba(251, 191, 36, 0.5); animation: sPulse 3s ease-in-out infinite; }
+@keyframes sPulse { 0%, 100% { box-shadow: 0 0 4px #fbbf24; } 50% { box-shadow: 0 0 10px #fbbf24, 0 0 18px rgba(251, 191, 36, 0.4); } }
+.t-ray { position: absolute; width: 1.5px; height: 4px; background: #fde047; border-radius: 1px; top: 50%; left: 50%; transform-origin: 0 0; transform: translateX(-50%) rotate(calc(var(--ri) * 45deg)) translateY(-10px); }
+.tog-thumb { position: absolute; top: 3px; left: 3px; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #c4e8fd, #7dd3fc); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 8px rgba(125, 211, 252, 0.28); transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s, box-shadow 0.4s; z-index: 2; pointer-events: none; }
+.tog-thumb.day { left: calc(100% - 33px); background: linear-gradient(135deg, #fde68a, #fbbf24); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 0 10px rgba(251, 191, 36, 0.45); }
 
-.dark-mode .theme-btn {
-  border-color: #374151;
-}
-
-.theme-btn:hover {
-  background: #f3f4f6;
-  transform: scale(1.1);
-}
-
-.dark-mode .theme-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Main Content */
-.dashboard-main {
+.main-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
 }
 
-.welcome-section {
-  margin-bottom: 2rx;
-}
-
-.greeting-card {
+.welcome-banner {
+  position: relative;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 12px;
+  border-radius: 24px;
+  padding: 0;
   margin-bottom: 2rem;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  color: white;
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+  overflow: hidden;
+  min-height: 200px;
 }
 
-.greeting-card h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.8rem;
+.welcome-banner.dark {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e293b 100%);
+  box-shadow: 0 20px 60px rgba(30, 27, 75, 0.8), 0 0 100px rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-.greeting-card p {
+.banner-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+  animation: float-orb 15s ease-in-out infinite;
+}
+
+.welcome-banner.dark .gradient-orb {
+  opacity: 0.6;
+  filter: blur(80px);
+}
+
+.orb1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.8), transparent);
+  top: -100px;
+  left: -50px;
+  animation-delay: 0s;
+}
+
+.orb2 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.6), transparent);
+  bottom: -80px;
+  right: -30px;
+  animation-delay: 3s;
+  animation-duration: 18s;
+}
+
+.orb3 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.5), transparent);
+  top: 50%;
+  left: 50%;
+  animation-delay: 6s;
+  animation-duration: 20s;
+}
+
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+.grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  animation: grid-move 20s linear infinite;
+}
+
+.welcome-banner.dark .grid-pattern {
+  background-image: 
+    linear-gradient(rgba(139,92,246,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,92,246,0.1) 1px, transparent 1px);
+}
+
+@keyframes grid-move {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(30px, 30px); }
+}
+
+.particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle ease-in-out infinite;
+  box-shadow: 0 0 4px rgba(255,255,255,0.8);
+}
+
+.welcome-banner.dark .particle {
+  background: rgba(139, 92, 246, 0.9);
+  box-shadow: 0 0 6px rgba(139, 92, 246, 0.8), 0 0 12px rgba(139, 92, 246, 0.4);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.welcome-content {
+  position: relative;
+  z-index: 1;
+  padding: 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.greeting-icon {
+  font-size: 3rem;
+  display: inline-block;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.welcome-text h2 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.welcome-banner.dark .welcome-text h2 {
+  text-shadow: 0 2px 20px rgba(139, 92, 246, 0.5), 0 4px 40px rgba(139, 92, 246, 0.3);
+}
+
+.welcome-text p {
   margin: 0;
   opacity: 0.95;
   font-size: 1.1rem;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+.map-button {
+  animation: pulse-button 2s ease-in-out infinite;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-  transition: all 0.3s ease;
+.welcome-banner.dark .map-button {
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2);
 }
 
-.dark-mode .card {
-  background: #1f2937;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-.card:hover {
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  margin-top: 0;
-}
-
-.card-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #1f2937;
-}
-
-.dark-mode .card-header h3 {
-  color: #f3f4f6;
-}
-
-.edit-btn, .clear-btn {
-  background: none;
-  border: none;
-  color: #667eea;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: color 0.2s;
-}
-
-.edit-btn:hover, .clear-btn:hover {
-  color: #764ba2;
-}
-
-/* Search Card */
-.search-input-wrapper {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.search-input {
-  flex: 1;
-  padding: 0.75rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-}
-
-.dark-mode .search-input {
-  background: #111827;
-  border-color: #374151;
-  color: #f3f4f6;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.search-btn {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform 0.2s;
-}
-
-.search-btn:hover {
-  transform: scale(1.05);
-}
-
-.search-results {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.result-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dark-mode .result-item {
-  background: #111827;
-}
-
-.result-item:hover {
-  background: #f3f4f6;
-  padding-left: 1rem;
-}
-
-.dark-mode .result-item:hover {
-  background: #1f2937;
-}
-
-.result-icon {
-  font-size: 1.5rem;
-}
-
-.result-info {
-  flex: 1;
-}
-
-.result-info p {
-  margin: 0;
-}
-
-.result-name {
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.dark-mode .result-name {
-  color: #f3f4f6;
-}
-
-.result-distance {
-  font-size: 0.85rem;
-  color: #6b7280;
-}
-
-.dark-mode .result-distance {
-  color: #9ca3af;
-}
-
-.result-arrow {
-  color: #d1d5db;
-  font-weight: bold;
-}
-
-/* Favorites */
-.favorites-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.favorite-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dark-mode .favorite-item {
-  background: #111827;
-}
-
-.favorite-item:hover {
-  transform: translateX(4px);
-}
-
-.fav-icon {
-  font-size: 1.5rem;
-}
-
-.fav-info {
-  flex: 1;
-}
-
-.fav-info p {
-  margin: 0;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.dark-mode .fav-info p {
-  color: #f3f4f6;
-}
-
-.fav-info small {
-  color: #6b7280;
-  font-size: 0.85rem;
-}
-
-.dark-mode .fav-info small {
-  color: #9ca3af;
-}
-
-.remove-btn {
-  background: none;
-  border: none;
-  color: #ef4444;
-  cursor: pointer;
-  font-size: 1.2rem;
-  transition: color 0.2s;
-}
-
-.remove-btn:hover {
-  color: #dc2626;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 2rem 1rem;
-  color: #6b7280;
-}
-
-.dark-mode .empty-state {
-  color: #9ca3af;
-}
-
-.empty-state p {
-  margin: 0 0 0.5rem 0;
-  font-weight: 600;
-}
-
-.empty-state small {
-  font-size: 0.85rem;
-}
-
-/* Recent Searches */
-.recent-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.recent-item {
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.dark-mode .recent-item {
-  background: #111827;
-}
-
-.recent-item:hover {
-  background: #eef2ff;
-  padding-left: 1rem;
-}
-
-.dark-mode .recent-item:hover {
-  background: #1f2937;
-}
-
-.recent-item p {
-  margin: 0;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.dark-mode .recent-item p {
-  color: #f3f4f6;
-}
-
-.recent-time {
-  font-size: 0.8rem;
-  color: #9ca3af;
-  background: rgba(102, 126, 234, 0.1);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-}
-
-/* Profile Card */
-.profile-card {
-  grid-column: 1 / -1;
-}
-
-.profile-header {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.dark-mode .profile-header {
-  border-bottom-color: #374151;
-}
-
-.avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.profile-info h3 {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.3rem;
-  color: #1f2937;
-}
-
-.dark-mode .profile-info h3 {
-  color: #f3f4f6;
-}
-
-.profile-info p {
-  margin: 0 0 0.5rem 0;
-  color: #6b7280;
-  font-size: 0.95rem;
-}
-
-.dark-mode .profile-info p {
-  color: #9ca3af;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.status-badge.active {
-  background: #dcfce7;
-  color: #4b5563;
-}
-
-.status-badge.inactive {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.action-btn {
-  flex: 1;
-  padding: 0.75rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-}
-
-.dark-mode .action-btn {
-  background: #111827;
-  border-color: #374151;
-  color: #f3f4f6;
-}
-
-.action-btn:hover {
-  border-color: #667eea;
-  color: #667eea;
-}
-
-.action-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-}
-
-.action-btn.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-}
-
-/* Stats Card */
-.stats-card {
-  grid-column: 1 / -1;
+@keyframes pulse-button {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-.stat-item {
-  text-align: center;
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: slideUp 0.5s ease-out forwards;
+  opacity: 0;
 }
 
-.dark-mode .stat-item {
-  background: #111827;
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+.dark-mode .stat-card {
+  background: #1f2937;
+}
+
+.stat-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transform: scaleX(0);
+  transition: transform 0.3s;
+}
+
+.stat-card:hover::before {
+  transform: scaleX(1);
+}
+
+.stat-icon-wrapper {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.stat-icon {
+  font-size: 1.8rem;
+  color: white;
+  z-index: 1;
+}
+
+.stat-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .stat-value {
-  display: block;
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #667eea;
-  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.dark-mode .stat-value {
+  color: #f3f4f6;
 }
 
 .stat-label {
-  display: block;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: #6b7280;
+  margin-top: 0.25rem;
 }
 
 .dark-mode .stat-label {
   color: #9ca3af;
 }
 
-/* Actions Card */
-.actions-card {
-  grid-column: 1 / -1;
+.stat-trend {
+  color: #10b981;
+  font-size: 1.2rem;
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 
-.quick-actions {
+.stat-card:hover .stat-trend {
+  opacity: 1;
+}
+
+.content-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
 }
 
-.action-item {
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.card-header i {
+  color: #667eea;
+}
+
+.dark-mode .card-header {
+  color: #f1f5f9;
+}
+
+.dark-mode .card-header i {
+  color: #a78bfa;
+}
+
+.search-results,
+.favorites-list,
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.result-item,
+.favorite-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+}
+
+.dark-mode .result-item,
+.dark-mode .favorite-item {
+  background: #111827;
+}
+
+.result-item:hover,
+.favorite-item:hover {
+  background: #eef2ff;
+  transform: translateX(8px);
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.dark-mode .result-item:hover,
+.dark-mode .favorite-item:hover {
+  background: #1f2937;
+}
+
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.3s ease;
+}
+
+.list-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.list-move {
+  transition: transform 0.3s ease;
+}
+
+.recent-item {
+  cursor: pointer;
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recent-item:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+}
+
+.dark-mode .recent-item:hover {
+  background: #334155;
+}
+
+.recent-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.dark-mode .recent-name {
+  color: #f1f5f9;
+}
+
+.timeline-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.dark-mode .timeline-marker {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.5);
+}
+
+.recent-timeline {
+  margin-top: 1rem;
+}
+
+.result-chip {
+  font-size: 0.75rem;
+}
+
+.favorite-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+}
+
+.empty-state-inline {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
   padding: 1rem;
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
+}
+
+.empty-state-inline p {
+  margin: 0;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.dark-mode .empty-state-inline p {
+  color: #cbd5e1;
+}
+
+.empty-state-inline small {
+  font-size: 0.875rem;
+  opacity: 0.8;
+  color: #9ca3af;
+}
+
+.dark-mode .empty-state-inline small {
+  color: #94a3b8;
+}
+
+:deep(.p-card) {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
 }
 
-.dark-mode .action-item {
-  background: #111827;
-  border-color: #374151;
+.dark-mode :deep(.p-card) {
+  background: #1e293b;
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.action-item:hover {
-  border-color: #667eea;
-  transform: translateY(-4px);
+.dark-mode :deep(.p-inputtext) {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(71, 85, 105, 0.5);
+  color: #f1f5f9;
 }
 
-.action-item.danger:hover {
-  border-color: #ef4444;
+.dark-mode :deep(.p-inputtext:enabled:hover) {
+  border-color: #a78bfa;
 }
 
-.action-icon {
-  font-size: 1.5rem;
+.dark-mode :deep(.p-inputtext:enabled:focus) {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 0.2rem rgba(167, 139, 250, 0.2);
 }
 
-.action-item span:last-child {
+.dark-mode :deep(.p-button) {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.dark-mode :deep(.p-button:enabled:hover) {
+  background: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.dark-mode :deep(.p-tag) {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+}
+
+.dark-mode :deep(.p-chip) {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd;
+}
+
+.dark-mode :deep(.p-message) {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.5);
+  color: #cbd5e1;
+}
+
+.dark-mode :deep(.p-inline-message) {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.5);
+  color: #cbd5e1;
+}
+
+.dark-mode :deep(.p-timeline-event-marker) {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.dark-mode :deep(.p-timeline-event-connector) {
+  background: rgba(139, 92, 246, 0.3);
+}
+
+.dark-mode :deep(.p-badge) {
+  background: rgba(139, 92, 246, 0.3);
+  color: #e9d5ff;
+}
+
+.dark-mode :deep(.p-dialog) {
+  background: #1e293b;
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  color: #f1f5f9;
+}
+
+.dark-mode :deep(.p-dialog-header) {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode :deep(.p-dialog-content) {
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+.dark-mode :deep(.p-dialog-footer) {
+  background: #1e293b;
+  border-top: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode :deep(.p-divider) {
+  border-color: rgba(71, 85, 105, 0.3);
+}
+
+.dark-mode :deep(.p-checkbox .p-checkbox-box) {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+.dark-mode :deep(.p-checkbox .p-checkbox-box.p-highlight) {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+
+.result-info,
+.favorite-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.result-name,
+.favorite-name {
   font-weight: 600;
-  color: #1f2937;
-  font-size: 0.85rem;
+}
+
+.result-type {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #9ca3af;
+}
+
+.empty-state i {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+  font-weight: 600;
+}
+
+.empty-state small {
+  font-size: 0.875rem;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.profile-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+}
+
+.profile-data {
   text-align: center;
 }
 
-.dark-mode .action-item span:last-child {
-  color: #f3f4f6;
+.profile-data h3 {
+  margin: 0 0 0.5rem 0;
 }
 
-/* Info Card */
-.info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-.dark-mode .info-item {
-  background: #111827;
-}
-
-.info-label {
-  font-weight: 600;
+.profile-data p {
+  margin: 0 0 0.5rem 0;
   color: #6b7280;
 }
 
-.dark-mode .info-label {
-  color: #9ca3af;
+.form-field {
+  margin-bottom: 1rem;
 }
 
-.info-value {
-  color: #667eea;
+.form-field label {
+  display: block;
+  margin-bottom: 0.5rem;
   font-weight: 600;
-}
-
-/* Modales */
-.modal-overlay {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-}
-
-.dark-mode .modal-card {
-  background: #1f2937;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2rem;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.dark-mode .modal-header {
-  border-bottom-color: #374151;
-}
-
-.modal-header h2 {
-  margin: 0;
-  color: #1f2937;
-}
-
-.dark-mode .modal-header h2 {
-  color: #f3f4f6;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #6b7280;
-  transition: color 0.2s;
-}
-
-.close-btn:hover {
-  color: #1f2937;
-}
-
-.dark-mode .close-btn:hover {
-  color: #f3f4f6;
-}
-
-.modal-body {
-  padding: 2rem;
-}
-
-/* Form */
-.profile-form, .settings-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.dark-mode .form-group label {
-  color: #f3f4f6;
-}
-
-.form-input {
-  padding: 0.75rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-}
-
-.dark-mode .form-input {
-  background: #111827;
-  border-color: #374151;
-  color: #f3f4f6;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.btn-primary, .btn-secondary {
-  flex: 1;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #1f2937;
-  border: 2px solid #e5e7eb;
-}
-
-.dark-mode .btn-secondary {
-  background: #111827;
-  color: #f3f4f6;
-  border-color: #374151;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-.dark-mode .btn-secondary:hover {
-  background: #1f2937;
+  font-size: 0.875rem;
 }
 
 .settings-group {
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 1.5rem;
 }
 
-.dark-mode .settings-group {
-  border-bottom-color: #374151;
-}
-
-.settings-group h3 {
+.settings-group h4 {
   margin: 0 0 1rem 0;
-  color: #1f2937;
+  font-size: 1rem;
 }
 
-.dark-mode .settings-group h3 {
-  color: #f3f4f6;
-}
-
-.settings-group.danger {
-  border-color: #fee2e2;
-}
-
-.settings-group.danger h3 {
-  color: #dc2626;
-}
-
-.setting-item {
+.checkbox-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem;
-  cursor: pointer;
+  padding: 0.5rem 0;
 }
 
-.setting-item input {
-  cursor: pointer;
-  width: 18px;
-  height: 18px;
-}
-
-.setting-item span {
-  color: #1f2937;
-  font-weight: 500;
-}
-
-.dark-mode .setting-item span {
-  color: #f3f4f6;
-}
-
-.btn-danger {
-  width: 100%;
-  padding: 0.75rem;
-  background: #fee2e2;
-  color: #dc2626;
-  border: 2px solid #fecaca;
+.settings-group.danger {
+  border: 1px solid #ef4444;
   border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  margin-bottom: 0.5rem;
-}
-
-.btn-danger:hover {
-  background: #fecaca;
-  border-color: #ef4444;
-}
-
-/* Help Sections */
-.help-section {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.dark-mode .help-section {
-  border-bottom-color: #374151;
-}
-
-.help-section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.help-section h3 {
-  margin: 0 0 0.5rem 0;
-  color: #1f2937;
-}
-
-.dark-mode .help-section h3 {
-  color: #f3f4f6;
-}
-
-.help-section p {
-  margin: 0;
-  color: #6b7280;
-  line-height: 1.6;
-}
-
-.dark-mode .help-section p {
-  color: #9ca3af;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .quick-actions {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .profile-card {
-    grid-column: 1;
-  }
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.05);
 }
 
 @media (max-width: 768px) {
-  .dashboard-main {
+  .main-content {
     padding: 1rem;
   }
 
-  .header-content {
-    padding: 0 1rem;
+  .welcome-banner {
+    min-height: 250px;
   }
 
-  .greeting-card {
-    padding: 1.5rem;
-  }
-
-  .greeting-card h2 {
-    font-size: 1.4rem;
-  }
-
-  .card {
-    padding: 1rem;
-  }
-
-  .profile-header {
+  .welcome-content {
     flex-direction: column;
     text-align: center;
+    gap: 1.5rem;
+    padding: 2rem 1.5rem;
   }
 
-  .avatar {
-    margin: 0 auto;
+  .welcome-text h2 {
+    font-size: 1.5rem;
   }
 
-  .profile-actions {
-    flex-direction: column;
-  }
-
-  .action-btn {
-    width: 100%;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .quick-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .modal-card {
-    width: 95%;
-    max-height: 95vh;
-  }
-}
-
-@media (max-width: 480px) {
-  .dashboard-header {
-    padding: 1rem 0;
-  }
-
-  .logo-section h1 {
-    font-size: 1.4rem;
-  }
-
-  .logo-section .subtitle {
-    display: none;
-  }
-
-  .greeting-card h2 {
-    font-size: 1.2rem;
-  }
-
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .edit-btn, .clear-btn {
-    margin-top: 0.5rem;
-  }
-
-  .search-input-wrapper {
-    flex-direction: column;
-  }
-
-  .search-btn {
-    width: 100%;
+  .greeting-icon {
+    font-size: 2.5rem;
   }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
   }
 
-  .stat-item {
-    padding: 0.5rem;
-  }
-
-  .stat-value {
-    font-size: 1.4rem;
-  }
-
-  .quick-actions {
+  .content-grid {
     grid-template-columns: 1fr;
   }
 
-  .action-item {
-    padding: 0.75rem;
+  .actions-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
