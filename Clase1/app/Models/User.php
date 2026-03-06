@@ -25,7 +25,7 @@ class User extends Authenticatable
         'email_verified_at',
         'email_verification_token',
         'email_verification_expires_at',
-        'status',
+        'status_id',
     ];
 
     /**
@@ -55,6 +55,30 @@ class User extends Authenticatable
     public function nodos()
     {
         return $this->hasMany(Nodo::class);
+    }
+
+    public function statusRelation()
+    {
+        return $this->belongsTo(UserStatus::class, 'status_id');
+    }
+
+    // Accessor para mantener compatibilidad con código existente
+    public function getStatusAttribute()
+    {
+        return $this->statusRelation()->value('nombre') ?? 'activo';
+    }
+
+    // Mutator para permitir asignar por nombre
+    public function setStatusAttribute($value)
+    {
+        if (is_string($value)) {
+            $status = UserStatus::where('nombre', $value)->first();
+            if ($status) {
+                $this->attributes['status_id'] = $status->id;
+            }
+        } elseif (is_numeric($value)) {
+            $this->attributes['status_id'] = $value;
+        }
     }
 
     // Accessor para mantener compatibilidad con $user->name

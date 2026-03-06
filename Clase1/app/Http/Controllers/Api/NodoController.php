@@ -27,7 +27,7 @@ class NodoController extends Controller
             'nombre' => 'required|string|max:255',
             'latitud' => 'required|numeric|between:-90,90',
             'longitud' => 'required|numeric|between:-180,180',
-            'tipo' => ['required', Rule::in(['salon', 'pasillo', 'ba\u00f1o', 'escaleras'])],
+            'tipo_id' => 'required|integer|exists:nodo_tipos,id',
             'piso' => 'required|integer',
         ]);
 

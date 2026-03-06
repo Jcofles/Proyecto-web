@@ -17,13 +17,18 @@ class NodoSeeder extends Seeder
         DB::table('conexiones')->delete();
         DB::table('nodos')->delete();
 
+        // Obtener IDs de tipos
+        $tipoSalon = DB::table('nodo_tipos')->where('nombre', 'salon')->value('id');
+        $tipoBano = DB::table('nodo_tipos')->where('nombre', 'baño')->value('id');
+        $tipoEscaleras = DB::table('nodo_tipos')->where('nombre', 'escaleras')->value('id');
+
         // Coordenadas ITFIP (Espinal, Tolima) — centradas en 4.148, -74.885
         // Los nodos están separados por 0.0001 grados (~10m) para que queden juntos
         $salon101 = Nodo::create([
             'nombre' => 'Salón 101',
             'latitud' => 4.14800000,
             'longitud' => -74.88500000,
-            'tipo' => 'salon',
+            'tipo_id' => $tipoSalon,
             'piso' => 1,
         ]);
 
@@ -31,7 +36,7 @@ class NodoSeeder extends Seeder
             'nombre' => 'Baños Bloque D',
             'latitud' => 4.14800100,
             'longitud' => -74.88500000,
-            'tipo' => 'baño',
+            'tipo_id' => $tipoBano,
             'piso' => 1,
         ]);
 
@@ -39,7 +44,7 @@ class NodoSeeder extends Seeder
             'nombre' => 'Salón 102',
             'latitud' => 4.14800000,
             'longitud' => -74.88500100,
-            'tipo' => 'salon',
+            'tipo_id' => $tipoSalon,
             'piso' => 1,
         ]);
 
@@ -47,7 +52,7 @@ class NodoSeeder extends Seeder
             'nombre' => 'Escaleras Bloque D',
             'latitud' => 4.14800100,
             'longitud' => -74.88500100,
-            'tipo' => 'escaleras',
+            'tipo_id' => $tipoEscaleras,
             'piso' => 1,
         ]);
 

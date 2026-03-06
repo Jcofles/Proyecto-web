@@ -45,3 +45,12 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('nodos', [NodoController::class, 'index']);
 Route::post('nodos', [NodoController::class, 'store']);
 Route::post('nodos/conectar', [NodoController::class, 'conectar']);
+
+// Catálogos
+Route::get('nodo-tipos', function() {
+    return \App\Models\NodoTipo::where('activo', true)->get();
+});
+
+Route::get('user-status', function() {
+    return \App\Models\UserStatus::where('activo', true)->get();
+});

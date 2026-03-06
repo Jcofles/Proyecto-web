@@ -13,7 +13,7 @@ class Nodo extends Model
         'nombre',
         'latitud',
         'longitud',
-        'tipo',
+        'tipo_id',
         'piso',
     ];
 
@@ -44,8 +44,19 @@ class Nodo extends Model
     }
 
     public function user()
-{
-    return $this->belongsTo(User::class);
-}
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function tipo()
+    {
+        return $this->belongsTo(NodoTipo::class, 'tipo_id');
+    }
+
+    // Accessor para mantener compatibilidad
+    public function getTipoAttribute()
+    {
+        return $this->tipo()->value('nombre');
+    }
 
 }
