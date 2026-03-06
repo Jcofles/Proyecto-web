@@ -5,8 +5,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import UserMenu from '@/components/common/UserMenu.vue';
 import { useTheme } from '@/composables/useTheme';
+import { useGeolocation } from '@/composables/useGeolocation';
 
 const { night, toggleTheme } = useTheme();
+const { userLocation, isInsideCampus, isLoading, error } = useGeolocation();
 
 const MAP_CENTER = [4.1563, -74.8975]; 
 const map = ref(null);
@@ -363,6 +365,57 @@ watch(night, () => {
 
 <template>
   <div class="wrap" :class="{ day: !night }">
+    <!-- Pantalla de bloqueo si no está en el campus -->
+    <div v-if="isLoading" class="access-screen">
+      <div class="access-content">
+        <div class="spinner-location">
+          <div class="spinner-ring">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+        </div>
+        <h2>Obteniendo tu ubicación...</h2>
+        <p>Asegúrate de permitir el acceso a tu ubicación</p>
+      </div>
+    </div>
+
+    <div v-else-if="error" class="access-screen error">
+      <div class="access-content">
+        <div class="error-icon">
+          <svg viewBox="0 0 72 72" fill="none">
+            <circle cx="36" cy="36" r="32" stroke="var(--err)" stroke-width="2"/>
+            <path d="M28 28l16 16M44 28l-16 16" stroke="var(--err)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Error de ubicación</h2>
+        <p>{{ error }}</p>
+        <button @click="$router.push('/dashboard')" class="btn-back">Volver al Dashboard</button>
+      </div>
+    </div>
+
+    <div v-else-if="!isInsideCampus" class="access-screen blocked">
+      <div class="access-content">
+        <div class="blocked-icon">
+          <svg viewBox="0 0 72 72" fill="none">
+            <circle cx="36" cy="36" r="28" stroke="var(--b)" stroke-width="2"/>
+            <path d="M36 20c-8.8 0-16 7.2-16 16s7.2 16 16 16 16-7.2 16-16-7.2-16-16-16z" fill="none" stroke="var(--b)" stroke-width="2"/>
+            <path d="M20 20l32 32" stroke="var(--err)" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2>Fuera del campus</h2>
+        <p>Debes estar dentro del campus ITFIP para acceder al mapa de navegación.</p>
+        <div class="location-info">
+          <p><strong>Tu ubicación:</strong></p>
+          <p>{{ userLocation.lat.toFixed(6) }}, {{ userLocation.lng.toFixed(6) }}</p>
+        </div>
+        <button @click="$router.push('/dashboard')" class="btn-back">Volver al Dashboard</button>
+      </div>
+    </div>
+
+    <!-- Mapa (solo visible si está dentro del campus) -->
+    <template v-else>
     <div id="map"></div>
     
     <!-- Theme Toggle -->
@@ -419,6 +472,7 @@ watch(night, () => {
       </div>
     </div>
   </div>
+    </template>
   </div>
 </template>
 
@@ -448,6 +502,128 @@ watch(night, () => {
   height: 100vh;
   overflow: hidden;
   font-family: var(--F);
+}
+
+/* Pantallas de acceso/bloqueo */
+.access-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 20px;
+}
+
+.access-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.spinner-location {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-ring {
+  display: inline-block;
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.spinner-ring div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 51px;
+  height: 51px;
+  margin: 6px;
+  border: 6px solid transparent;
+  border-top-color: #7dd3fc;
+  border-radius: 50%;
+  animation: rotate 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.spinner-ring div:nth-child(1) {
+  animation-delay: -0.45s;
+}
+
+.spinner-ring div:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.spinner-ring div:nth-child(3) {
+  animation-delay: -0.15s;
+}
+
+@keyframes rotate {
+  to { transform: rotate(360deg); }
+}
+
+.error-icon,
+.blocked-icon {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 24px;
+}
+
+.access-screen h2 {
+  color: var(--txt);
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.access-screen p {
+  color: var(--txt2);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.location-info {
+  background: var(--inp);
+  border: 1px solid var(--bo);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.location-info p {
+  margin: 4px 0;
+  font-family: var(--FM);
+  font-size: 12px;
+}
+
+.btn-back {
+  padding: 12px 24px;
+  background: linear-gradient(115deg, var(--b4) 0%, var(--b3) 40%, var(--b2) 80%, var(--b) 100%);
+  background-size: 200% 200%;
+  animation: gSh 4.5s ease infinite;
+  border: none;
+  color: white;
+  font-weight: 700;
+  border-radius: 11px;
+  cursor: pointer;
+  font-family: var(--F);
+  font-size: 14px;
+  margin-top: 16px;
+  transition: transform .2s;
+}
+
+.btn-back:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes gSh {
+  0%, 100% { background-position: 0 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 #map { 

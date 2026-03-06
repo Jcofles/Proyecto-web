@@ -153,13 +153,16 @@ class RegisterController extends Controller
                 }
 
                 // Crear registro definitivo en users
+                // Obtener el ID del status 'activo'
+                $statusActivo = \DB::table('user_status')->where('nombre', 'activo')->value('id');
+                
                 $user = User::create([
                     'nombres' => $pending->nombres,
                     'apellidos' => $pending->apellidos,
                     'email' => $pending->email,
                     'password' => $pending->password,
                     'email_verified_at' => Carbon::now(),
-                    'status' => 'activo',
+                    'status_id' => $statusActivo ?? 1,
                 ]);
 
                 // borrar pendiente

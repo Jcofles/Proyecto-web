@@ -83,6 +83,7 @@ class LoginController extends Controller
             ], 403);
         }
 
+        // Verificar email
         if (!$user->email_verified_at) {
             return response()->json([
                 'message' => 'Debes verificar tu correo electrónico primero',

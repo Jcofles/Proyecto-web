@@ -364,7 +364,7 @@ const submit = async () => {
       verificationLink.value = response.verification_url;
     }
 
-    // Cambiar a pantalla de verificación
+    // Registro exitoso - mostrar pantalla de verificación
     stage.value = 'verification'
     loading.value = false
   } catch (error) {
