@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 import axios from 'axios';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -323,6 +323,14 @@ const updateMapTheme = () => {
   }).addTo(map.value);
 };
 
+// Watcher para actualizar el marcador azul cuando se obtiene ubicación real
+watch(userLocation, (newLocation) => {
+  if (newLocation && newLocation.lat && newLocation.lng && marcadorUsuario.value) {
+    marcadorUsuario.value.setLatLng([newLocation.lat, newLocation.lng]);
+    map.value?.panTo([newLocation.lat, newLocation.lng], { animate: true });
+  }
+}, { deep: true });
+
 onMounted(async () => {
   map.value = L.map('map', { maxZoom: 22 }).setView(MAP_CENTER, 18);
   
@@ -334,7 +342,11 @@ onMounted(async () => {
 
   await obtenerDatos();
 
-  marcadorUsuario.value = L.marker([4.1560131, -74.8972928], { 
+  // Usar ubicación real del usuario si está disponible, sino usar ubicación por defecto
+  const initialLat = userLocation.value?.lat || 4.1560131;
+  const initialLng = userLocation.value?.lng || -74.8972928;
+
+  marcadorUsuario.value = L.marker([initialLat, initialLng], { 
     draggable: true,
     icon: L.divIcon({
       className: 'custom-div-icon',
@@ -357,7 +369,6 @@ onMounted(async () => {
 });
 
 // Watch para cambiar el tema del mapa
-import { watch } from 'vue';
 watch(night, () => {
   updateMapTheme();
 });
