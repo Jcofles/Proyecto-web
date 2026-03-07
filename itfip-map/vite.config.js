@@ -1,6 +1,6 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
@@ -10,8 +10,14 @@ export default defineConfig({
     }
   },
   server: {
+    host: true,
     allowedHosts: [
-      'soon-vanitied-unripplingly.ngrok-free.dev'
-    ]
+      'solomon-lookup-edward-joe.trycloudflare.com'
+    ],
+    hmr: {
+      host: 'solomon-lookup-edward-joe.trycloudflare.com',
+      clientPort: 443,
+      protocol: 'wss'
+    }
   }
 })
