@@ -6,9 +6,12 @@ import 'leaflet/dist/leaflet.css';
 import UserMenu from '@/components/common/UserMenu.vue';
 import { useTheme } from '@/composables/useTheme';
 import { useGeolocation } from '@/composables/useGeolocation';
+import { useDeviceOrientation } from '@/composables/useDeviceOrientation';
+import { salonesBloquedD } from '@/data/salonesBloquedD';
 
 const { night, toggleTheme } = useTheme();
 const { userLocation, isInsideCampus, isLoading, error } = useGeolocation();
+const { heading, isSupported: compassSupported, hasPermission, requestPermission, startTracking, stopTracking } = useDeviceOrientation();
 
 const MAP_CENTER = [4.1563, -74.8975]; 
 const map = ref(null);
@@ -26,6 +29,8 @@ const progresoRuta = ref(0);
 const animRequest = ref(null);
 const rutaRecorrida = ref(null);
 const WALKING_SPEED = 1.4;
+const compassEnabled = ref(false);
+const userMarkerRotation = ref(0);
 
 const tiempoFormateado = computed(() => {
   const s = tiempoSegundos.value;
@@ -39,15 +44,7 @@ const distanciaFormateada = computed(() => {
   return distanciaRuta.value ? `${distanciaRuta.value.toLocaleString()} m` : '--';
 });
 
-const datosPlanos = [
-  { nombre: "PASILLO", coords: [[4.15652, -74.89765], [4.15656, -74.89765], [4.15656, -74.89735], [4.15652, -74.89735]], tipo: 'pasillo' },
-  { nombre: "101", coords: [[4.15645, -74.89762], [4.15651, -74.89762], [4.15651, -74.89758], [4.15645, -74.89758]], tipo: 'salon' },
-  { nombre: "BAÑOS", coords: [[4.15645, -74.89758], [4.15651, -74.89758], [4.15651, -74.89754], [4.15645, -74.89754]], tipo: 'salon' },
-  { nombre: "102", coords: [[4.15645, -74.89754], [4.15651, -74.89754], [4.15651, -74.89750], [4.15645, -74.89750]], tipo: 'salon' },
-  { nombre: "103", coords: [[4.15645, -74.89750], [4.15651, -74.89750], [4.15651, -74.89746], [4.15645, -74.89746]], tipo: 'salon' },
-  { nombre: "104", coords: [[4.15645, -74.89746], [4.15651, -74.89746], [4.15651, -74.89742], [4.15645, -74.89742]], tipo: 'salon' },
-  { nombre: "ESCALERAS", coords: [[4.15645, -74.89742], [4.15651, -74.89742], [4.15651, -74.89738], [4.15645, -74.89738]], tipo: 'escalera' }
-];
+
 
 const obtenerDatos = async () => {
   try {
@@ -332,13 +329,32 @@ watch(userLocation, (newLocation) => {
 }, { deep: true });
 
 onMounted(async () => {
-  map.value = L.map('map', { maxZoom: 22 }).setView(MAP_CENTER, 18);
+  map.value = L.map('map', { 
+    maxZoom: 22,
+    dragging: true,
+    touchZoom: true,
+    scrollWheelZoom: true,
+    doubleClickZoom: true,
+    boxZoom: true,
+    tap: true,
+    tapTolerance: 15,
+    zoomControl: true
+  }).setView(MAP_CENTER, 18);
   
   updateMapTheme();
 
-  datosPlanos.forEach(d => {
-    L.polygon(d.coords, { color: "#555", fillColor: "#d32f2f", fillOpacity: 0.4 }).addTo(map.value);
-  });
+  // Agregar salones del Bloque D
+  L.geoJSON(salonesBloquedD, {
+    style: {
+      color: '#0ea5e9',
+      weight: 2,
+      fillColor: '#38bdf8',
+      fillOpacity: 0.3
+    },
+    onEachFeature: (feature, layer) => {
+      layer.bindPopup(`<strong>${feature.properties.nombre}</strong><br>Bloque D`);
+    }
+  }).addTo(map.value);
 
   await obtenerDatos();
 
@@ -351,14 +367,37 @@ onMounted(async () => {
     icon: L.divIcon({
       className: 'custom-div-icon',
       html: `<div style="
-        background-color:#00bfff;
-        width:18px; height:18px;
-        border-radius:50%;
-        border:2px solid #fff;
-        box-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff;
-      "></div>`,
-      iconSize: [18, 18],
-      iconAnchor: [9, 9]
+        position: relative;
+        width: 24px;
+        height: 24px;
+      ">
+        <div style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: #00bfff;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          border: 3px solid #fff;
+          box-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff;
+        "></div>
+        <div style="
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-bottom: 10px solid #ff4444;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        "></div>
+      </div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
     })
   }).addTo(map.value);
 
@@ -372,6 +411,114 @@ onMounted(async () => {
 watch(night, () => {
   updateMapTheme();
 });
+
+// Watch para rotar el marcador del usuario según la orientación del dispositivo
+watch(heading, (newHeading) => {
+  console.log('Heading actualizado:', newHeading); // Debug
+  if (compassEnabled.value && marcadorUsuario.value) {
+    userMarkerRotation.value = newHeading;
+    // Actualizar el icono del marcador con rotación completa
+    const icon = L.divIcon({
+      className: 'custom-div-icon',
+      html: `<div style="
+        position: relative;
+        width: 24px;
+        height: 24px;
+        transform: rotate(${newHeading}deg);
+      ">
+        <div style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: #00bfff;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          border: 3px solid #fff;
+          box-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff;
+        "></div>
+        <div style="
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-bottom: 10px solid #ff4444;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        "></div>
+      </div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+    marcadorUsuario.value.setIcon(icon);
+  }
+});
+
+const toggleCompass = async () => {
+  if (!compassSupported.value) {
+    alert('Tu dispositivo no soporta brújula');
+    return;
+  }
+  
+  if (!compassEnabled.value) {
+    // Activar brújula
+    const granted = await requestPermission();
+    if (!granted) {
+      alert('Necesitas dar permiso para usar la brújula');
+      return;
+    }
+    await startTracking();
+    compassEnabled.value = true;
+  } else {
+    // Desactivar brújula
+    compassEnabled.value = false;
+    stopTracking();
+    
+    if (marcadorUsuario.value) {
+      // Restaurar icono con flecha apuntando al norte (sin rotación)
+      const icon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div style="
+          position: relative;
+          width: 24px;
+          height: 24px;
+        ">
+          <div style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #00bfff;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff;
+          "></div>
+          <div style="
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid #ff4444;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+          "></div>
+        </div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      marcadorUsuario.value.setIcon(icon);
+    }
+  }
+};
 </script>
 
 <template>
@@ -446,6 +593,26 @@ watch(night, () => {
           <span class="tog-thumb" :class="{ day: !night }"></span>
         </div>
       </button>
+    </div>
+    
+    <!-- Compass Toggle -->
+    <div v-if="compassSupported" class="compass-toggle">
+      <button 
+        @click="toggleCompass" 
+        class="compass-btn"
+        :class="{ active: compassEnabled }"
+        :title="compassEnabled ? 'Desactivar brújula' : 'Activar brújula'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+          <path d="M12 8l-3 8 3-2 3 2z" fill="currentColor"/>
+        </svg>
+        <span class="compass-label">{{ compassEnabled ? 'ON' : 'OFF' }}</span>
+      </button>
+      <div v-if="compassEnabled" class="heading-display">
+        {{ Math.round(heading) }}°
+      </div>
     </div>
     
     <!-- User Menu -->
@@ -673,6 +840,78 @@ watch(night, () => {
 .t-ray{position:absolute;width:2px;height:5px;background:#fde047;border-radius:1px;top:50%;left:50%;transform-origin:0 0;transform:translateX(-50%) rotate(calc(var(--ri)*45deg)) translateY(-13px)}
 .tog-thumb{position:absolute;top:4px;left:4px;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#c4e8fd,#7dd3fc);box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 10px rgba(125,211,252,.28);transition:left .45s cubic-bezier(.34,1.56,.64,1),background .45s,box-shadow .45s;z-index:2;pointer-events:none}
 .tog-thumb.day{left:calc(100% - 38px);background:linear-gradient(135deg,#fde68a,#fbbf24);box-shadow:0 2px 8px rgba(0,0,0,.25),0 0 12px rgba(251,191,36,.45)}
+
+/* Compass Toggle */
+.compass-toggle {
+  position: fixed;
+  top: 80px;
+  left: 18px;
+  z-index: 1002;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.compass-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--surf);
+  border: 1px solid var(--bo2);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 18px rgba(0,0,0,.35);
+}
+
+.compass-btn svg {
+  width: 24px;
+  height: 24px;
+  color: var(--txt2);
+  transition: all 0.3s;
+}
+
+.compass-btn.active {
+  background: linear-gradient(135deg, var(--b3), var(--b));
+  border-color: var(--b);
+  box-shadow: 0 4px 22px rgba(125,211,252,.4);
+}
+
+.compass-btn.active svg {
+  color: white;
+  /* Animación removida - el giroscopio controla la rotación */
+}
+
+.compass-label {
+  font-family: var(--FM);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--txt2);
+  letter-spacing: 0.5px;
+}
+
+.compass-btn.active .compass-label {
+  color: white;
+}
+
+.heading-display {
+  background: var(--surf);
+  border: 1px solid var(--bo);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: var(--FM);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--b);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
 
 .user-menu-container {
   position: fixed;

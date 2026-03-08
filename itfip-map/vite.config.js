@@ -12,10 +12,10 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: [
-      'solomon-lookup-edward-joe.trycloudflare.com'
+      'assisted-guarantees-frontpage-hottest.trycloudflare.com'
     ],
     hmr: {
-      host: 'solomon-lookup-edward-joe.trycloudflare.com',
+      host: 'assisted-guarantees-frontpage-hottest.trycloudflare.com',
       clientPort: 443,
       protocol: 'wss'
     }
