@@ -31,6 +31,7 @@ const rutaRecorrida = ref(null);
 const WALKING_SPEED = 1.4;
 const compassEnabled = ref(false);
 const userMarkerRotation = ref(0);
+const isFollowingUser = ref(false);
 
 const tiempoFormateado = computed(() => {
   const s = tiempoSegundos.value;
@@ -458,6 +459,21 @@ watch(heading, (newHeading) => {
   }
 });
 
+const centerOnUser = () => {
+  if (marcadorUsuario.value && map.value) {
+    const pos = marcadorUsuario.value.getLatLng();
+    map.value.setView(pos, 19, { animate: true, duration: 0.5 });
+    isFollowingUser.value = true;
+    
+    // Desactivar seguimiento después de que el usuario mueva el mapa
+    setTimeout(() => {
+      map.value.once('dragstart', () => {
+        isFollowingUser.value = false;
+      });
+    }, 100);
+  }
+};
+
 const toggleCompass = async () => {
   if (!compassSupported.value) {
     alert('Tu dispositivo no soporta brújula');
@@ -613,6 +629,21 @@ const toggleCompass = async () => {
       <div v-if="compassEnabled" class="heading-display">
         {{ Math.round(heading) }}°
       </div>
+    </div>
+    
+    <!-- Botón Centrar en Usuario -->
+    <div class="location-toggle">
+      <button 
+        @click="centerOnUser" 
+        class="location-btn"
+        :class="{ active: isFollowingUser }"
+        title="Ir a mi ubicación"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        </svg>
+      </button>
     </div>
     
     <!-- User Menu -->
@@ -851,6 +882,60 @@ const toggleCompass = async () => {
   flex-direction: column;
   gap: 8px;
   align-items: center;
+}
+
+.location-toggle {
+  position: fixed;
+  top: 145px;
+  left: 18px;
+  z-index: 1002;
+}
+
+.location-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--surf);
+  border: 1px solid var(--bo2);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  box-shadow: 0 4px 18px rgba(0,0,0,.35);
+}
+
+.location-btn svg {
+  width: 26px;
+  height: 26px;
+  color: var(--txt2);
+  transition: all 0.3s;
+}
+
+.location-btn:hover {
+  border-color: var(--b);
+  box-shadow: 0 4px 22px rgba(125,211,252,.3);
+}
+
+.location-btn.active {
+  background: linear-gradient(135deg, var(--b3), var(--b));
+  border-color: var(--b);
+  box-shadow: 0 4px 22px rgba(125,211,252,.4);
+  animation: locationPulse 2s ease-in-out infinite;
+}
+
+.location-btn.active svg {
+  color: white;
+}
+
+@keyframes locationPulse {
+  0%, 100% {
+    box-shadow: 0 4px 22px rgba(125,211,252,.4);
+  }
+  50% {
+    box-shadow: 0 4px 30px rgba(125,211,252,.6), 0 0 20px rgba(125,211,252,.3);
+  }
 }
 
 .compass-btn {

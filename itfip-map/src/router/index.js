@@ -35,6 +35,8 @@ const routes = [
     name: 'verify-email',
     component: () => import('../views/auth/VerifyEmailView.vue')
   }
+
+  
 ]
 
 const router = createRouter({
