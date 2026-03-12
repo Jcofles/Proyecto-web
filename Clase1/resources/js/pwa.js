@@ -1,16 +1,31 @@
-// Registro del Service Worker para PWA
+// ============================================
+// REGISTRO DEL SERVICE WORKER
+// ============================================
 let deferredPrompt;
 let installPromptShown = false;
 
+// Verificar si ya fue instalada
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('✅ PWA ya instalada');
+    installPromptShown = true;
+}
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(registration => {
-                console.log('✓ Service Worker registrado:', registration.scope);
-            })
-            .catch(error => {
-                console.error('✗ Error al registrar Service Worker:', error);
-            });
+        // IMPORTANTE: Ruta absoluta desde public/
+        navigator.serviceWorker.register('/sw.js', { 
+            scope: '/'
+        })
+        .then(registration => {
+            console.log('✓ Service Worker registrado:', registration.scope);
+            console.log('✓ Estado:', registration.active ? 'Activo' : 'Instalando...');
+            
+            // Forzar actualización
+            registration.update();
+        })
+        .catch(error => {
+            console.error('✗ Error al registrar Service Worker:', error);
+        });
     });
 }
 

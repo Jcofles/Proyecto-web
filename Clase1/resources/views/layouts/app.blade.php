@@ -20,8 +20,8 @@
     <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.svg">
     <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.svg">
     
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.webmanifest">
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="/manifest.json">
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/icon-192x192.svg">
