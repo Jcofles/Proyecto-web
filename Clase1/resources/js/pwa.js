@@ -264,11 +264,33 @@ window.addEventListener('appinstalled', () => {
     }, 3000);
 });
 
-// Solicitar permisos de geolocalización de alta precisión
+// Solicitar permisos de geolocalización de alta precisión - CONFIGURACIÓN PROFESIONAL
 if ('geolocation' in navigator) {
+    // Configuración agresiva para máxima precisión GPS
+    const highAccuracyOptions = {
+        enableHighAccuracy: true,  // FUERZA GPS real (no Wi-Fi/torres)
+        timeout: 15000,            // 15 segundos para obtener señal GPS
+        maximumAge: 0              // NUNCA usar ubicaciones en caché
+    };
+    
+    console.log('📶 Solicitando permisos GPS con configuración profesional:', highAccuracyOptions);
+    
     navigator.geolocation.getCurrentPosition(
-        () => console.log('✓ Permisos de GPS concedidos'),
-        () => console.warn('⚠ Permisos de GPS denegados'),
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        (position) => {
+            console.log('✅ Permisos de GPS concedidos - Precisión:', position.coords.accuracy.toFixed(1), 'm');
+            console.log('📍 Ubicación inicial:', position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+            console.warn('⚠ Error GPS:', error.message);
+            console.warn('📶 Intentando con configuración menos estricta...');
+            
+            // Fallback con configuración menos estricta
+            navigator.geolocation.getCurrentPosition(
+                () => console.log('✅ GPS funcionando con configuración básica'),
+                () => console.error('❌ GPS completamente bloqueado'),
+                { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+            );
+        },
+        highAccuracyOptions
     );
 }

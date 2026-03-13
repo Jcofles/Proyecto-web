@@ -9,6 +9,12 @@
   "orientation": "portrait",
   "theme_color": "#00ff88",
   "background_color": "#ffffff",
+  "permissions": [
+    "geolocation",
+    "accelerometer",
+    "gyroscope",
+    "magnetometer"
+  ],
   "icons": [
     {
       "src": "/icon.svg",

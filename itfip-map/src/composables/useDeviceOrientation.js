@@ -6,25 +6,33 @@ export function useDeviceOrientation() {
   const hasPermission = ref(false)
 
   const handleOrientation = (event) => {
-    console.log('Evento de orientación recibido:', {
+    console.log('📡 EVENTO RECIBIDO:', {
       alpha: event.alpha,
       beta: event.beta,
       gamma: event.gamma,
       webkitCompassHeading: event.webkitCompassHeading,
-      absolute: event.absolute
+      absolute: event.absolute,
+      timestamp: Date.now()
     })
     
+    let newHeading = null
+    
     // iOS usa webkitCompassHeading (más preciso)
-    if (event.webkitCompassHeading !== undefined) {
-      heading.value = event.webkitCompassHeading
-      console.log('Usando webkitCompassHeading:', heading.value)
+    if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+      newHeading = event.webkitCompassHeading
+      console.log('🧭 iOS Compass:', newHeading)
     } 
     // Android y otros usan alpha
-    else if (event.alpha !== null) {
-      // Convertir alpha (0-360) a heading del norte
-      // alpha: 0 = Norte, 90 = Este, 180 = Sur, 270 = Oeste
-      heading.value = 360 - event.alpha
-      console.log('Usando alpha, heading calculado:', heading.value)
+    else if (event.alpha !== null && event.alpha !== undefined) {
+      newHeading = event.alpha
+      console.log('🧭 Android Alpha:', newHeading)
+    }
+    
+    if (newHeading !== null) {
+      heading.value = newHeading
+      console.log('✅ HEADING ACTUALIZADO A:', heading.value)
+    } else {
+      console.warn('⚠️ No se pudo obtener heading del evento')
     }
   }
 
@@ -51,25 +59,52 @@ export function useDeviceOrientation() {
   }
 
   const startTracking = async () => {
-    console.log('Iniciando tracking de orientación...')
+    console.log('🔴 INICIANDO TRACKING...')
+    
     const granted = await requestPermission()
+    console.log('🔵 Permiso granted:', granted)
+    
     if (granted) {
-      console.log('Permiso concedido, agregando listeners')
-      // Intentar con absolute primero (más preciso)
+      console.log('🟢 Agregando event listeners...')
+      
+      // Remover listeners anteriores por si acaso
+      window.removeEventListener('deviceorientationabsolute', handleOrientation)
+      window.removeEventListener('deviceorientation', handleOrientation)
+      
+      // Agregar listeners
       window.addEventListener('deviceorientationabsolute', handleOrientation, true)
-      // Fallback a deviceorientation normal
       window.addEventListener('deviceorientation', handleOrientation, true)
       
-      // Test: forzar un evento después de 1 segundo
+      console.log('✅ Listeners agregados')
+      
+      // TEST: Agregar listener de prueba que se ejecuta cada vez
+      let testCount = 0
+      const testHandler = (e) => {
+        testCount++
+        console.log(`🧪 TEST #${testCount}:`, {
+          alpha: e.alpha,
+          beta: e.beta,
+          gamma: e.gamma,
+          heading_actual: heading.value
+        })
+        
+        if (testCount >= 5) {
+          window.removeEventListener('deviceorientation', testHandler)
+          console.log('🏁 Test completado')
+        }
+      }
+      window.addEventListener('deviceorientation', testHandler)
+      
+      // Verificar estado
       setTimeout(() => {
-        console.log('Estado después de 1s:', {
+        console.log('🟡 ESTADO DESPUÉS DE 2s:', {
           heading: heading.value,
           hasPermission: hasPermission.value,
           isSupported: isSupported.value
         })
-      }, 1000)
+      }, 2000)
     } else {
-      console.error('Permiso denegado')
+      console.error('❌ Permiso DENEGADO')
     }
   }
 

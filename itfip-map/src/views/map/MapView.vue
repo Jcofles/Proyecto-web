@@ -6,12 +6,13 @@ import 'leaflet/dist/leaflet.css';
 import UserMenu from '@/components/common/UserMenu.vue';
 import { useTheme } from '@/composables/useTheme';
 import { useGeolocation } from '@/composables/useGeolocation';
-import { useDeviceOrientation } from '@/composables/useDeviceOrientation';
+import { useCompass } from '@/composables/useCompass';
 import { salonesBloquedD } from '@/data/salonesBloquedD';
 
 const { night, toggleTheme } = useTheme();
-const { userLocation, isInsideCampus, isLoading, error } = useGeolocation();
-const { heading, isSupported: compassSupported, hasPermission, requestPermission, startTracking, stopTracking } = useDeviceOrientation();
+const { userLocation, movementHeading, isInsideCampus, isLoading, error } = useGeolocation();
+const { heading: compassHeading, accuracy, isSupported, error: compassError } = useCompass();
+const compassSupported = ref(true);
 
 const MAP_CENTER = [4.1563, -74.8975]; 
 const map = ref(null);
@@ -31,6 +32,7 @@ const rutaRecorrida = ref(null);
 const WALKING_SPEED = 1.4;
 const compassEnabled = ref(false);
 const userMarkerRotation = ref(0);
+const testingPermissions = ref(false);
 const isFollowingUser = ref(false);
 
 const tiempoFormateado = computed(() => {
@@ -236,8 +238,7 @@ const iniciarSimulacion = () => {
   // resetear ruta recorrida
   rutaRecorrida.value.setLatLngs([]);
 
-  // desactivar arrastre mientras se simula
-  if (marcadorUsuario.value && marcadorUsuario.value.dragging) marcadorUsuario.value.dragging.disable();
+  // El marcador ya no es arrastrable, no necesitamos deshabilitarlo
 
   const latlngs = rutaLatlngs.value.map(p => L.latLng(p[0], p[1]));
   let total = 0;
@@ -290,7 +291,6 @@ const iniciarSimulacion = () => {
       // llegada
       isSimulando.value = false;
       progresoRuta.value = 100;
-      if (marcadorUsuario.value && marcadorUsuario.value.dragging) marcadorUsuario.value.dragging.enable();
       if (destinoMarker.value) destinoMarker.value.bindPopup('Has llegado').openPopup();
     }
   };
@@ -302,36 +302,77 @@ const detenerSimulacion = () => {
   if (animRequest.value) cancelAnimationFrame(animRequest.value);
   animRequest.value = null;
   isSimulando.value = false;
-  if (marcadorUsuario.value && marcadorUsuario.value.dragging) marcadorUsuario.value.dragging.enable();
+  // El marcador ya no es arrastrable, no necesitamos habilitarlo
 };
 
 const tileLayer = ref(null);
 
 const updateMapTheme = () => {
-  if (!map.value) return;
-  if (tileLayer.value) map.value.removeLayer(tileLayer.value);
+  if (!map.value) {
+    console.warn('⚠️ Mapa no existe aún');
+    return;
+  }
+  if (tileLayer.value) {
+    map.value.removeLayer(tileLayer.value);
+    console.log('🗑️ Capa anterior removida');
+  }
   
   const url = night.value 
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
   
+  console.log('🌍 Cargando tiles desde:', url);
+  console.log('🌙 Modo nocturno:', night.value);
+  
   tileLayer.value = L.tileLayer(url, {
     maxZoom: 22,
-    maxNativeZoom: 19
+    maxNativeZoom: 19,
+    attribution: '© CartoDB'
   }).addTo(map.value);
+  
+  tileLayer.value.on('tileerror', (error) => {
+    console.error('❌ Error cargando tile:', error);
+  });
+  
+  tileLayer.value.on('tileload', () => {
+    console.log('✅ Tile cargado correctamente');
+  });
+  
+  console.log('✅ TileLayer agregado al mapa');
 };
 
 // Watcher para actualizar el marcador azul cuando se obtiene ubicación real
+// SOLO actualiza la posición del marcador, NO mueve el mapa automáticamente
 watch(userLocation, (newLocation) => {
   if (newLocation && newLocation.lat && newLocation.lng && marcadorUsuario.value) {
     marcadorUsuario.value.setLatLng([newLocation.lat, newLocation.lng]);
-    map.value?.panTo([newLocation.lat, newLocation.lng], { animate: true });
+    // NO hacer panTo automático - solo si el usuario presiona el botón de centrar
+    console.log('📍 Ubicación actualizada:', newLocation.lat, newLocation.lng);
   }
 }, { deep: true });
 
 onMounted(async () => {
+  console.log('🗺️ Inicializando mapa...');
+  
+  // SOLICITAR UBICACIÓN INMEDIATAMENTE
+  console.log('📍 Solicitando ubicación...');
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        reject,
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+    console.log('✅ Ubicación obtenida:', position.coords);
+  } catch (error) {
+    console.error('❌ Error obteniendo ubicación:', error);
+    alert('Por favor, permite el acceso a tu ubicación para usar el mapa');
+  }
+  
   map.value = L.map('map', { 
     maxZoom: 22,
+    minZoom: 10,
     dragging: true,
     touchZoom: true,
     scrollWheelZoom: true,
@@ -339,73 +380,73 @@ onMounted(async () => {
     boxZoom: true,
     tap: true,
     tapTolerance: 15,
-    zoomControl: true
+    zoomControl: true,
+    keyboard: true,
+    trackResize: true,
+    inertia: true,
+    inertiaDeceleration: 3000,
+    inertiaMaxSpeed: 1500,
+    bounceAtZoomLimits: true
   }).setView(MAP_CENTER, 18);
   
+  console.log('✅ Mapa creado');
+  
   updateMapTheme();
+  console.log('✅ Tema aplicado');
 
   // Agregar salones del Bloque D
-  L.geoJSON(salonesBloquedD, {
-    style: {
-      color: '#0ea5e9',
-      weight: 2,
-      fillColor: '#38bdf8',
-      fillOpacity: 0.3
-    },
-    onEachFeature: (feature, layer) => {
-      layer.bindPopup(`<strong>${feature.properties.nombre}</strong><br>Bloque D`);
-    }
-  }).addTo(map.value);
+  try {
+    L.geoJSON(salonesBloquedD, {
+      style: {
+        color: '#0ea5e9',
+        weight: 2,
+        fillColor: '#38bdf8',
+        fillOpacity: 0.3
+      },
+      onEachFeature: (feature, layer) => {
+        layer.bindPopup(`<strong>${feature.properties.nombre}</strong><br>Bloque D`);
+      }
+    }).addTo(map.value);
+    console.log('✅ Salones agregados');
+  } catch (e) {
+    console.error('❌ Error agregando salones:', e);
+  }
 
   await obtenerDatos();
+  console.log('✅ Datos obtenidos');
 
   // Usar ubicación real del usuario si está disponible, sino usar ubicación por defecto
   const initialLat = userLocation.value?.lat || 4.1560131;
   const initialLng = userLocation.value?.lng || -74.8972928;
+  console.log('📍 Ubicación inicial:', initialLat, initialLng);
 
   marcadorUsuario.value = L.marker([initialLat, initialLng], { 
-    draggable: true,
+    draggable: false,
     icon: L.divIcon({
       className: 'custom-div-icon',
-      html: `<div style="
-        position: relative;
-        width: 24px;
-        height: 24px;
-      ">
-        <div style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: #00bfff;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          border: 3px solid #fff;
-          box-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff;
-        "></div>
-        <div style="
-          position: absolute;
-          top: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-bottom: 10px solid #ff4444;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-        "></div>
-      </div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
+      html: `
+        <div style="position: relative; width: 44px; height: 44px;">
+          <!-- Círculo de precisión -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(66, 133, 244, 0.15); border-radius: 50%; border: 1px solid rgba(66, 133, 244, 0.3);"></div>
+          <!-- Cono de dirección -->
+          <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid rgba(66, 133, 244, 0.7); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));"></div>
+          <!-- Punto azul central -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; background: #4285f4; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);"></div>
+        </div>
+      `,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22]
     })
   }).addTo(map.value);
+  console.log('✅ Marcador de usuario agregado (NO arrastrable)');
 
-  marcadorUsuario.value.on('drag', () => {
-    if (isSimulando.value) detenerSimulacion();
-    if (selectedDestino.value) calcularRuta();
-  });
+  // Remover el evento de drag ya que no es arrastrable
+  // marcadorUsuario.value.on('drag', () => {
+  //   if (isSimulando.value) detenerSimulacion();
+  //   if (selectedDestino.value) calcularRuta();
+  // });
+  
+  console.log('🎉 Mapa completamente inicializado');
 });
 
 // Watch para cambiar el tema del mapa
@@ -413,127 +454,132 @@ watch(night, () => {
   updateMapTheme();
 });
 
-// Watch para rotar el marcador del usuario según la orientación del dispositivo
-watch(heading, (newHeading) => {
-  console.log('Heading actualizado:', newHeading); // Debug
-  if (compassEnabled.value && marcadorUsuario.value) {
-    userMarkerRotation.value = newHeading;
-    // Actualizar el icono del marcador con rotación completa
+// Watch para rotar el marcador según la BRÚJULA del dispositivo
+watch(compassHeading, (newHeading) => {
+  if (marcadorUsuario.value && newHeading !== null && newHeading !== undefined && compassEnabled.value) {
+    const iconHtml = `
+      <div style="position: relative; width: 44px; height: 44px; transform: rotate(${newHeading}deg);">
+        <!-- Círculo de precisión -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(66, 133, 244, 0.15); border-radius: 50%; border: 1px solid rgba(66, 133, 244, 0.3);"></div>
+        <!-- Cono de dirección -->
+        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid rgba(66, 133, 244, 0.7); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));"></div>
+        <!-- Punto azul central -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; background: #4285f4; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);"></div>
+      </div>
+    `;
+    
     const icon = L.divIcon({
       className: 'custom-div-icon',
-      html: `<div style="
-        position: relative;
-        width: 24px;
-        height: 24px;
-        transform: rotate(${newHeading}deg);
-      ">
-        <div style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: #00bfff;
-          width: 18px;
-          height: 18px;
-          border-radius: 50%;
-          border: 3px solid #fff;
-          box-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff;
-        "></div>
-        <div style="
-          position: absolute;
-          top: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-bottom: 10px solid #ff4444;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-        "></div>
-      </div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
+      html: iconHtml,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22]
     });
+    
     marcadorUsuario.value.setIcon(icon);
   }
-});
+}, { immediate: true });
 
 const centerOnUser = () => {
   if (marcadorUsuario.value && map.value) {
     const pos = marcadorUsuario.value.getLatLng();
     map.value.setView(pos, 19, { animate: true, duration: 0.5 });
     isFollowingUser.value = true;
+    console.log('🎯 Centrado en usuario:', pos);
     
-    // Desactivar seguimiento después de que el usuario mueva el mapa
-    setTimeout(() => {
-      map.value.once('dragstart', () => {
-        isFollowingUser.value = false;
-      });
-    }, 100);
+    // Desactivar seguimiento cuando el usuario mueva el mapa manualmente
+    const stopFollowing = () => {
+      isFollowingUser.value = false;
+      map.value.off('dragstart', stopFollowing);
+      console.log('🚫 Seguimiento desactivado');
+    };
+    
+    map.value.once('dragstart', stopFollowing);
   }
 };
 
-const toggleCompass = async () => {
-  if (!compassSupported.value) {
-    alert('Tu dispositivo no soporta brújula');
-    return;
+const requestAllPermissions = async () => {
+  console.log('🔐 Solicitando TODOS los permisos...');
+  
+  let permissionsGranted = [];
+  let permissionsDenied = [];
+  
+  // 1. Geolocalización
+  try {
+    const pos = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        reject,
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+    console.log('✅ Geolocalización permitida:', pos.coords);
+    permissionsGranted.push('📍 Ubicación');
+  } catch (e) {
+    console.error('❌ Geolocalización denegada:', e);
+    permissionsDenied.push('📍 Ubicación');
   }
   
-  if (!compassEnabled.value) {
-    // Activar brújula
-    const granted = await requestPermission();
-    if (!granted) {
-      alert('Necesitas dar permiso para usar la brújula');
-      return;
-    }
-    await startTracking();
-    compassEnabled.value = true;
+  // 2. Brújula
+  if (isSupported.value) {
+    permissionsGranted.push('🧭 Brújula');
   } else {
-    // Desactivar brújula
-    compassEnabled.value = false;
-    stopTracking();
-    
-    if (marcadorUsuario.value) {
-      // Restaurar icono con flecha apuntando al norte (sin rotación)
-      const icon = L.divIcon({
-        className: 'custom-div-icon',
-        html: `<div style="
-          position: relative;
-          width: 24px;
-          height: 24px;
-        ">
-          <div style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #00bfff;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 3px solid #fff;
-            box-shadow: 0 0 10px #00bfff, 0 0 20px #00bfff;
-          "></div>
-          <div style="
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 10px solid #ff4444;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-          "></div>
-        </div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-      marcadorUsuario.value.setIcon(icon);
-    }
+    permissionsDenied.push('🧭 Brújula');
   }
+  
+  // Mostrar resumen
+  let message = '✅ PERMISOS OTORGADOS:\n' + permissionsGranted.join('\n');
+  if (permissionsDenied.length > 0) {
+    message += '\n\n❌ PERMISOS DENEGADOS:\n' + permissionsDenied.join('\n');
+  }
+  alert(message);
+};
+
+const toggleCompass = () => {
+  compassEnabled.value = !compassEnabled.value;
+};
+
+const testPermissions = async () => {
+  testingPermissions.value = true;
+  console.log('🧪 INICIANDO TEST DE PERMISOS...');
+  
+  // Test 1: DeviceOrientationEvent existe?
+  console.log('1️⃣ DeviceOrientationEvent existe?', typeof DeviceOrientationEvent !== 'undefined');
+  
+  // Test 2: Requiere permiso?
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    console.log('2️⃣ Requiere permiso (iOS 13+)');
+    try {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      console.log('3️⃣ Resultado permiso:', permission);
+    } catch (e) {
+      console.error('❌ Error solicitando permiso:', e);
+    }
+  } else {
+    console.log('2️⃣ No requiere permiso (Android)');
+  }
+  
+  // Test 3: Agregar listener temporal
+  const testHandler = (event) => {
+    console.log('📡 EVENTO RECIBIDO:', {
+      alpha: event.alpha,
+      beta: event.beta,
+      gamma: event.gamma,
+      absolute: event.absolute,
+      webkitCompassHeading: event.webkitCompassHeading
+    });
+  };
+  
+  window.addEventListener('deviceorientation', testHandler);
+  window.addEventListener('deviceorientationabsolute', testHandler);
+  
+  console.log('⏳ Esperando eventos (10 segundos)...');
+  
+  setTimeout(() => {
+    window.removeEventListener('deviceorientation', testHandler);
+    window.removeEventListener('deviceorientationabsolute', testHandler);
+    console.log('✅ Test finalizado');
+    testingPermissions.value = false;
+  }, 10000);
 };
 </script>
 
@@ -627,8 +673,17 @@ const toggleCompass = async () => {
         <span class="compass-label">{{ compassEnabled ? 'ON' : 'OFF' }}</span>
       </button>
       <div v-if="compassEnabled" class="heading-display">
-        {{ Math.round(heading) }}°
+        {{ Math.round(compassHeading) }}°
       </div>
+      
+      <!-- Botón SOLICITAR PERMISOS -->
+      <button 
+        @click="requestAllPermissions" 
+        class="permission-btn"
+        title="Solicitar todos los permisos"
+      >
+        🔐
+      </button>
     </div>
     
     <!-- Botón Centrar en Usuario -->
@@ -653,8 +708,8 @@ const toggleCompass = async () => {
     
     <div class="hud">
     <div class="brand-box">
-      <h1 class="itfip-title">PRUEBA PILOTO</h1>
-      <p class="itfip-sub">ARRASTRA EL PUNTO AZUL</p>
+      <h1 class="itfip-title">NAVEGACIÓN GPS</h1>
+      <p class="itfip-sub">SELECCIONA TU DESTINO</p>
     </div>
     <div class="controls">
       <select v-model="selectedDestino" @change="calcularRuta" class="gta-select">
@@ -842,6 +897,35 @@ const toggleCompass = async () => {
   top: 0;
   left: 0;
   z-index: 0;
+  background: #1a1a2e;
+  touch-action: none;
+}
+
+/* Asegurar que los tiles de Leaflet se carguen */
+:deep(.leaflet-container) {
+  background: #1a1a2e;
+  touch-action: pan-x pan-y;
+}
+
+:deep(.leaflet-tile-container) {
+  opacity: 1 !important;
+}
+
+:deep(.leaflet-tile) {
+  opacity: 1 !important;
+}
+
+/* Asegurar que el mapa sea interactivo */
+:deep(.leaflet-interactive) {
+  cursor: grab;
+}
+
+:deep(.leaflet-interactive:active) {
+  cursor: grabbing;
+}
+
+:deep(.leaflet-dragging .leaflet-interactive) {
+  cursor: grabbing;
 }
 
 /* Posicionar controles de zoom de Leaflet */
@@ -886,7 +970,7 @@ const toggleCompass = async () => {
 
 .location-toggle {
   position: fixed;
-  top: 145px;
+  top: 280px;
   left: 18px;
   z-index: 1002;
 }
@@ -998,6 +1082,51 @@ const toggleCompass = async () => {
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
 
+.debug-heading {
+  background: #ff4444;
+  border: 1px solid #ff0000;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: var(--FM);
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  margin-top: 8px;
+}
+
+.permission-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: 1px solid #fbbf24;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  box-shadow: 0 4px 18px rgba(251,191,36,.4);
+  font-size: 20px;
+  animation: permissionPulse 2s ease-in-out infinite;
+}
+
+.permission-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(251,191,36,.6);
+}
+
+@keyframes permissionPulse {
+  0%, 100% {
+    box-shadow: 0 4px 18px rgba(251,191,36,.4);
+  }
+  50% {
+    box-shadow: 0 4px 28px rgba(251,191,36,.7), 0 0 20px rgba(251,191,36,.3);
+  }
+}
+
 .user-menu-container {
   position: fixed;
   top: 20px;
@@ -1085,6 +1214,59 @@ const toggleCompass = async () => {
 }
 
 .custom-div-icon { background: none; border: none; }
+
+/* Marcador estilo Google Maps */
+.user-marker {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  transition: transform 0.3s ease-out;
+  display: block;
+}
+
+/* Círculo de precisión (fondo azul claro) */
+.marker-accuracy {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(66, 133, 244, 0.15);
+  border-radius: 50%;
+  border: 1px solid rgba(66, 133, 244, 0.3);
+  z-index: 1;
+}
+
+/* Punto azul central */
+.marker-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: #4285f4;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 3;
+}
+
+/* Cono de dirección (apunta hacia arriba) */
+.marker-direction {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 20px solid rgba(66, 133, 244, 0.7);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  z-index: 2;
+}
 
 .info-panel { 
   margin-top: 14px;

@@ -3,6 +3,7 @@ import './style.css'
 import App from './App.vue'
 import router from './router/index.js'
 import "primeicons/primeicons.css";
+import { requestSensorPermissions } from './utils/permissions.js'
 
 // 1. Importar PrimeVue y el tema
 import PrimeVue from 'primevue/config';
@@ -116,4 +117,5 @@ function showInstallPrompt() {
 // Detectar instalación exitosa
 window.addEventListener('appinstalled', () => {
     console.log('✅ PWA instalada exitosamente');
+    console.log('💡 Usa el botón 🔐 en el mapa para dar permisos');
 });

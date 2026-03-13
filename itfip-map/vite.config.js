@@ -12,10 +12,10 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: [
-      'assisted-guarantees-frontpage-hottest.trycloudflare.com'
+      'undefined-train-tours-andrew.trycloudflare.com'
     ],
     hmr: {
-      host: 'assisted-guarantees-frontpage-hottest.trycloudflare.com',
+      host: 'undefined-train-tours-andrew.trycloudflare.com',
       clientPort: 443,
       protocol: 'wss'
     }
