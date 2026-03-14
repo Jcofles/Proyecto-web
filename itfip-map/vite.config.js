@@ -12,10 +12,9 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: [
-      'undefined-train-tours-andrew.trycloudflare.com'
+      '.trycloudflare.com'
     ],
     hmr: {
-      host: 'undefined-train-tours-andrew.trycloudflare.com',
       clientPort: 443,
       protocol: 'wss'
     }

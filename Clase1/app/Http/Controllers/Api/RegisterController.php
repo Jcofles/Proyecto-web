@@ -31,6 +31,9 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
+        Log::info('=== INICIO REGISTRO ===');
+        Log::info('Request data: ' . json_encode($request->all()));
+        
         try {
             // Validación de datos (aún no se escribe en `users`)
             $validator = Validator::make($request->all(), [
@@ -83,7 +86,14 @@ class RegisterController extends Controller
             ]);
 
             // Enviar correo de confirmación al registro pendiente
-            $this->emailService->sendVerification($pending, $token);
+            try {
+                $this->emailService->sendVerification($pending, $token);
+                Log::info('Email de verificación enviado a: ' . $pending->email);
+            } catch (\Exception $e) {
+                Log::warning('No se pudo enviar email de verificación: ' . $e->getMessage());
+                Log::warning('Stack trace: ' . $e->getTraceAsString());
+                // Continuar aunque falle el envío del email
+            }
 
             // construimos la URL de verificación para devolverla en el
             // json cuando estamos en entorno local o usando el driver "log",

@@ -23,13 +23,34 @@ async function request(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config)
-    const data = await response.json()
+    
+    // Verificar si la respuesta tiene contenido
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      throw {
+        status: response.status,
+        message: `El servidor no respondió con JSON. Status: ${response.status}`,
+      }
+    }
+    
+    const text = await response.text()
+    if (!text) {
+      throw {
+        status: response.status,
+        message: 'El servidor respondió vacío',
+      }
+    }
+    
+    const data = JSON.parse(text)
 
     if (!response.ok) {
       throw {
         status: response.status,
         message: data.message || 'Error en la petición',
         errors: data.errors,
+        blocked: data.blocked || false,
+        remaining_attempts: data.remaining_attempts,
+        remaining_seconds: data.remaining_seconds,
       }
     }
 
@@ -40,7 +61,7 @@ async function request(endpoint, options = {}) {
     }
     throw {
       status: 0,
-      message: error.message || 'Error de conexión',
+      message: error.message || 'Error de conexión con el servidor. Verifica que Laravel esté corriendo en http://localhost:8000',
     }
   }
 }

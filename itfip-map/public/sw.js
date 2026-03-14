@@ -41,6 +41,11 @@ self.addEventListener('activate', (event) => {
 
 // Evento fetch - Estrategia Network First
 self.addEventListener('fetch', (event) => {
+  // Solo cachear peticiones GET
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {

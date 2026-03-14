@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API - ITFIP Maps</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Test API - ITFIP Maps</h1>
+    
+    <h2>1. Test Conexión</h2>
+    <button onclick="testConnection()">Probar Conexión</button>
+    <pre id="connection-result"></pre>
+
+    <h2>2. Test Registro</h2>
+    <button onclick="testRegister()">Probar Registro</button>
+    <pre id="register-result"></pre>
+
+    <h2>3. Test Login</h2>
+    <button onclick="testLogin()">Probar Login</button>
+    <pre id="login-result"></pre>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+
+        async function testConnection() {
+            const result = document.getElementById('connection-result');
+            result.textContent = 'Probando conexión...';
+            
+            try {
+                const response = await fetch(`${API_URL}/nodos`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                result.className = 'success';
+                result.textContent = `✓ Conexión exitosa!\n\nStatus: ${response.status}\nNodos encontrados: ${data.length}`;
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+
+        async function testRegister() {
+            const result = document.getElementById('register-result');
+            result.textContent = 'Probando registro...';
+            
+            const userData = {
+                nombres: 'Test',
+                apellidos: 'Usuario',
+                email: `test${Date.now()}@test.com`,
+                password: 'Test1234',
+                password_confirmation: 'Test1234'
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const text = await response.text();
+                result.className = response.ok ? 'success' : 'error';
+                result.textContent = `Status: ${response.status}\nContent-Type: ${response.headers.get('content-type')}\n\nRespuesta cruda:\n${text}`;
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `Error de red: ${error.message}`;
+            }
+        }
+
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            result.textContent = 'Probando login...';
+            
+            const credentials = {
+                email: 'test@test.com',
+                password: 'Test1234'
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(credentials)
+                });
+                
+                const text = await response.text();
+                result.className = response.ok ? 'success' : 'error';
+                result.textContent = `Status: ${response.status}\nContent-Type: ${response.headers.get('content-type')}\n\nRespuesta cruda:\n${text}`;
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `Error de red: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

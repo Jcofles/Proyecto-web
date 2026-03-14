@@ -8,26 +8,48 @@ use Symfony\Component\HttpFoundation\Response;
 
 class Cors
 {
+    /**
+     * Handle an incoming request.
+     */
     public function handle(Request $request, Closure $next): Response
     {
-        $headers = [
-            // Cambia '*' por tu URL de frontend en producción (ej. https://app.mi-universidad.edu)
-            'Access-Control-Allow-Origin' => env('APP_FRONTEND_URL', '*'),
-            'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN',
-            'Access-Control-Allow-Credentials' => 'true',
+        $origin = $request->headers->get('Origin');
+        
+        // Dominios permitidos locales
+        $allowed = [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+            'http://localhost:3000',
+            'null',
         ];
-
-        if ($request->getMethod() === 'OPTIONS') {
-            return response()->json(['status' => 'OK'], 200, $headers);
+        
+        // Auto-detectar dominios de Cloudflare
+        $host = parse_url($origin, PHP_URL_HOST) ?? '';
+        $isCloudflare = str_ends_with($host, '.trycloudflare.com');
+        $isLocalhost = in_array($origin, $allowed) || str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
+        
+        // Permitir cualquier origen de Cloudflare o localhost
+        $allowOrigin = ($origin && ($isLocalhost || $isCloudflare)) ? $origin : '*';
+        
+        // Manejar preflight OPTIONS
+        if ($request->isMethod('OPTIONS')) {
+            return response('', 204)
+                ->header('Access-Control-Allow-Origin', $allowOrigin)
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, X-CSRF-Token')
+                ->header('Access-Control-Allow-Credentials', 'true')
+                ->header('Access-Control-Max-Age', '86400');
         }
 
+        // Procesar petición normal
         $response = $next($request);
-
-        foreach ($headers as $key => $value) {
-            $response->headers->set($key, $value);
-        }
-
-        return $response;
+        
+        return $response
+            ->header('Access-Control-Allow-Origin', $allowOrigin)
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-Requested-With, X-CSRF-Token')
+            ->header('Access-Control-Allow-Credentials', 'true');
     }
 }

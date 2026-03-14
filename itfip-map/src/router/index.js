@@ -4,7 +4,7 @@ import MapView from '../views/map/MapView.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/dashboard'
+    redirect: '/login'
   },
   {
     path: '/dashboard',
@@ -49,8 +49,6 @@ router.beforeEach((to, from, next) => {
   
   if (to.meta.requiresAuth && !token) {
     next('/login')
-  } else if (to.meta.guest && token) {
-    next('/map')
   } else {
     next()
   }

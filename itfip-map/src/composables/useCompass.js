@@ -1,78 +1,186 @@
 import { ref, onMounted, onUnmounted } from 'vue'
+import { KalmanFilter } from '@/utils/kalmanFilter'
 
 export function useCompass() {
   const heading = ref(0)
   const accuracy = ref(null)
   const isSupported = ref(false)
   const error = ref(null)
+  const isActive = ref(false)
+  const isCalibrating = ref(false)
   
-  let lastHeading = 0
-  const THRESHOLD = 2 // Solo actualizar si cambia más de 2 grados
+  // Filtro de Kalman AGRESIVO para giroscopio
+  const kalmanHeading = new KalmanFilter(0.001, 0.3, 0.5)
+  let isInitialized = false
+  let lastHeading = null
+  let calibrationOffset = 0
+  
+  // Buffer para promediar lecturas (más estabilidad)
+  const headingBuffer = []
+  const BUFFER_SIZE = 5
+  
+  // Suavizado adicional para transiciones 0°-360°
+  const normalizeHeading = (angle) => {
+    angle = angle % 360
+    if (angle < 0) angle += 360
+    return angle
+  }
+  
+  const smoothHeadingTransition = (newHeading, oldHeading) => {
+    if (oldHeading === null) return newHeading
+    
+    let diff = newHeading - oldHeading
+    
+    // Manejar transición 0°-360°
+    if (diff > 180) diff -= 360
+    if (diff < -180) diff += 360
+    
+    return normalizeHeading(oldHeading + diff)
+  }
+  
+  const getAverageHeading = (buffer) => {
+    if (buffer.length === 0) return 0
+    
+    // Convertir a vectores para promediar correctamente ángulos
+    let sumX = 0
+    let sumY = 0
+    
+    buffer.forEach(angle => {
+      const rad = angle * Math.PI / 180
+      sumX += Math.cos(rad)
+      sumY += Math.sin(rad)
+    })
+    
+    const avgX = sumX / buffer.length
+    const avgY = sumY / buffer.length
+    const avgAngle = Math.atan2(avgY, avgX) * 180 / Math.PI
+    
+    return normalizeHeading(avgAngle)
+  }
   
   const handleOrientationChange = (event) => {
-    let compassHeading = 0
+    if (!isActive.value) return
     
-    if (event.webkitCompassHeading !== undefined) {
-      // iOS
-      compassHeading = event.webkitCompassHeading
+    let rawHeading = null
+    let useAbsolute = false
+    
+    // iOS (webkitCompassHeading es el más preciso)
+    if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+      rawHeading = event.webkitCompassHeading
       accuracy.value = event.webkitCompassAccuracy
-    } else if (event.alpha !== null) {
-      // Android
-      compassHeading = 360 - event.alpha
+      useAbsolute = true
+      console.log('📱 iOS Compass:', rawHeading.toFixed(1) + '°')
+    }
+    // Android con orientación absoluta (mejor que alpha simple)
+    else if (event.absolute && event.alpha !== null) {
+      // CORRECCIÓN CRÍTICA: Android alpha va de 0 a 360
+      // 0° = Norte, 90° = Este, 180° = Sur, 270° = Oeste
+      // Pero el eje Z está invertido, necesitamos invertir
+      rawHeading = 360 - event.alpha
+      useAbsolute = true
+      console.log('🤖 Android Absolute:', event.alpha.toFixed(1) + '° → Corregido:', rawHeading.toFixed(1) + '°')
+    }
+    // Fallback: orientación relativa
+    else if (event.alpha !== null) {
+      rawHeading = 360 - event.alpha + calibrationOffset
+      console.log('🔄 Relative:', event.alpha.toFixed(1) + '° → Corregido:', rawHeading.toFixed(1) + '°')
+    }
+    
+    if (rawHeading === null) return
+    
+    // Normalizar
+    rawHeading = normalizeHeading(rawHeading)
+    
+    // Suavizar transiciones
+    rawHeading = smoothHeadingTransition(rawHeading, lastHeading)
+    lastHeading = rawHeading
+    
+    // Agregar al buffer
+    headingBuffer.push(rawHeading)
+    if (headingBuffer.length > BUFFER_SIZE) {
+      headingBuffer.shift()
+    }
+    
+    // Obtener promedio del buffer
+    const avgHeading = getAverageHeading(headingBuffer)
+    
+    // Aplicar Filtro de Kalman AGRESIVO
+    if (!isInitialized) {
+      kalmanHeading.reset(avgHeading)
+      isInitialized = true
+      heading.value = avgHeading
     } else {
-      return
+      const filtered = kalmanHeading.filter(avgHeading)
+      heading.value = normalizeHeading(filtered)
     }
     
-    // Normalizar a 0-360
-    compassHeading = ((compassHeading % 360) + 360) % 360
-    
-    // Solo actualizar si el cambio es significativo
-    const diff = Math.abs(compassHeading - lastHeading)
-    const minDiff = Math.min(diff, 360 - diff)
-    
-    if (minDiff > THRESHOLD) {
-      heading.value = compassHeading
-      lastHeading = compassHeading
+    console.log('🧭 Heading Final:', heading.value.toFixed(1) + '°')
+  }
+  
+  // Calibración manual (útil para Android sin orientación absoluta)
+  const calibrate = (trueNorth = 0) => {
+    isCalibrating.value = true
+    calibrationOffset = trueNorth - heading.value
+    setTimeout(() => {
+      isCalibrating.value = false
+    }, 1000)
+  }
+  
+  const startCompass = async () => {
+    if (typeof DeviceOrientationEvent === 'undefined') {
+      error.value = 'Giroscopio no disponible'
+      return false
     }
+    
+    // iOS 13+ requiere permiso
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      try {
+        const permission = await DeviceOrientationEvent.requestPermission()
+        if (permission !== 'granted') {
+          error.value = 'Permiso denegado para giroscopio'
+          return false
+        }
+      } catch (err) {
+        error.value = 'Error al solicitar permiso: ' + err.message
+        return false
+      }
+    }
+    
+    // Priorizar deviceorientationabsolute (más preciso)
+    window.addEventListener('deviceorientationabsolute', handleOrientationChange, { passive: true })
+    window.addEventListener('deviceorientation', handleOrientationChange, { passive: true })
+    
+    isActive.value = true
+    isSupported.value = true
+    return true
+  }
+  
+  const stopCompass = () => {
+    window.removeEventListener('deviceorientationabsolute', handleOrientationChange)
+    window.removeEventListener('deviceorientation', handleOrientationChange)
+    isActive.value = false
+    isInitialized = false
+    lastHeading = null
+    headingBuffer.length = 0
   }
   
   onMounted(() => {
-    if ('DeviceOrientationEvent' in window) {
-      const requestPermission = async () => {
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-          try {
-            const permission = await DeviceOrientationEvent.requestPermission()
-            if (permission === 'granted') {
-              window.addEventListener('deviceorientation', handleOrientationChange)
-              isSupported.value = true
-            } else {
-              error.value = 'Permisos de orientación denegados'
-            }
-          } catch (err) {
-            error.value = 'Error solicitando permisos: ' + err.message
-          }
-        } else {
-          window.addEventListener('deviceorientation', handleOrientationChange)
-          isSupported.value = true
-        }
-      }
-      
-      requestPermission()
-    } else {
-      error.value = 'Brújula no soportada en este dispositivo'
-    }
+    isSupported.value = 'DeviceOrientationEvent' in window
   })
   
   onUnmounted(() => {
-    if (window.DeviceOrientationEvent) {
-      window.removeEventListener('deviceorientation', handleOrientationChange)
-    }
+    stopCompass()
   })
   
   return {
     heading,
     accuracy,
     isSupported,
-    error
+    isActive,
+    isCalibrating,
+    error,
+    startCompass,
+    stopCompass,
+    calibrate
   }
 }

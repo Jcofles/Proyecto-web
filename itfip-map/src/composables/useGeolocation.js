@@ -1,13 +1,8 @@
 import { ref, onMounted, onUnmounted } from 'vue'
+import { KalmanFilter } from '@/utils/kalmanFilter'
 
-// Coordenadas del campus ITFIP (centro aproximado)
-const ITFIP_CENTER = {
-  lat: 4.1555,
-  lng: -74.8967
-}
-
-// Radio en metros (ajustado para cubrir todo el campus)
-const CAMPUS_RADIUS = 500 // 500 metros
+const ITFIP_CENTER = { lat: 4.1555, lng: -74.8967 }
+const CAMPUS_RADIUS = 500
 
 export function useGeolocation() {
   const userLocation = ref(null)
@@ -18,10 +13,14 @@ export function useGeolocation() {
   const error = ref(null)
   const watchId = ref(null)
   
-  // Filtro de suavizado para GPS
-  const locationHistory = []
-  const MAX_HISTORY = 5 // Promediar últimas 5 lecturas
-  const MIN_ACCURACY = 50 // Ignorar lecturas con precisión peor a 50m (relajado)
+  // Filtros de Kalman AGRESIVOS para lat/lng (CRÍTICO)
+  const kalmanLat = new KalmanFilter(0.0005, 0.3, 0.5)
+  const kalmanLng = new KalmanFilter(0.0005, 0.3, 0.5)
+  const MIN_ACCURACY = 50 // Más estricto
+  
+  // Buffer para promediar lecturas GPS
+  const locationBuffer = []
+  const BUFFER_SIZE = 3
 
   // Calcular distancia entre dos puntos (fórmula Haversine)
   function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -54,57 +53,82 @@ export function useGeolocation() {
     const distance = calculateDistance(lat, lng, ITFIP_CENTER.lat, ITFIP_CENTER.lng)
     return distance <= CAMPUS_RADIUS
   }
+  
+  // Promediar coordenadas del buffer
+  function getAverageLocation(buffer) {
+    if (buffer.length === 0) return null
+    
+    let sumLat = 0
+    let sumLng = 0
+    
+    buffer.forEach(loc => {
+      sumLat += loc.lat
+      sumLng += loc.lng
+    })
+    
+    return {
+      lat: sumLat / buffer.length,
+      lng: sumLng / buffer.length
+    }
+  }
 
-  // Actualizar ubicación con filtro de suavizado
+  // Actualizar ubicación con Filtro de Kalman AGRESIVO (CRÍTICO)
   function updateLocation(position) {
-    const lat = position.coords.latitude
-    const lng = position.coords.longitude
+    const rawLat = position.coords.latitude
+    const rawLng = position.coords.longitude
     const accuracy = position.coords.accuracy
     
-    console.log('📍 GPS - Precisión:', accuracy.toFixed(1), 'm')
+    console.log('📍 GPS Raw:', rawLat.toFixed(7), rawLng.toFixed(7), 'Accuracy:', accuracy.toFixed(1) + 'm')
     
-    // Ignorar lecturas con mala precisión
+    // Rechazar lecturas con baja precisión
     if (accuracy > MIN_ACCURACY) {
-      console.warn('⚠️ GPS impreciso, ignorando lectura')
+      console.log('⚠️ Lectura rechazada por baja precisión')
       return
     }
     
-    // Agregar a historial
-    locationHistory.push({ lat, lng })
-    if (locationHistory.length > MAX_HISTORY) {
-      locationHistory.shift()
+    // Agregar al buffer
+    locationBuffer.push({ lat: rawLat, lng: rawLng })
+    if (locationBuffer.length > BUFFER_SIZE) {
+      locationBuffer.shift()
     }
     
-    // Calcular promedio de ubicaciones
-    const avgLat = locationHistory.reduce((sum, loc) => sum + loc.lat, 0) / locationHistory.length
-    const avgLng = locationHistory.reduce((sum, loc) => sum + loc.lng, 0) / locationHistory.length
+    // Obtener promedio del buffer
+    const avgLocation = getAverageLocation(locationBuffer)
+    if (!avgLocation) return
     
-    // Calcular dirección de movimiento si hay ubicación anterior
+    // Aplicar Filtro de Kalman AGRESIVO (suavizado profesional)
+    const filteredLat = kalmanLat.filter(avgLocation.lat)
+    const filteredLng = kalmanLng.filter(avgLocation.lng)
+    
+    console.log('✅ GPS Filtrado:', filteredLat.toFixed(7), filteredLng.toFixed(7))
+    
+    // Calcular dirección de movimiento
     if (previousLocation.value) {
       const distance = calculateDistance(
         previousLocation.value.lat,
         previousLocation.value.lng,
-        avgLat,
-        avgLng
+        filteredLat,
+        filteredLng
       )
       
-      // Solo actualizar si nos movimos al menos 3 metros (reducir ruido)
-      if (distance > 3) {
-        const bearing = calculateBearing(
+      // Solo actualizar dirección si hay movimiento significativo (> 1m)
+      if (distance > 1) {
+        movementHeading.value = calculateBearing(
           previousLocation.value.lat,
           previousLocation.value.lng,
-          avgLat,
-          avgLng
+          filteredLat,
+          filteredLng
         )
-        movementHeading.value = bearing
-        console.log('🧭 Dirección movimiento:', bearing.toFixed(1), '°')
-        previousLocation.value = { lat: avgLat, lng: avgLng }
+        console.log('🧭 Dirección de movimiento:', movementHeading.value.toFixed(1) + '°')
+        previousLocation.value = { lat: filteredLat, lng: filteredLng }
       }
     } else {
-      previousLocation.value = { lat: avgLat, lng: avgLng }
+      kalmanLat.reset(rawLat)
+      kalmanLng.reset(rawLng)
+      previousLocation.value = { lat: filteredLat, lng: filteredLng }
     }
     
-    userLocation.value = { lat: avgLat, lng: avgLng }
+    userLocation.value = { lat: filteredLat, lng: filteredLng }
     isInsideCampus.value = true
     isLoading.value = false
     error.value = null
@@ -129,7 +153,7 @@ export function useGeolocation() {
     }
   }
 
-  // Iniciar seguimiento
+  // Iniciar seguimiento con configuración AGRESIVA
   function startTracking() {
     if (!navigator.geolocation) {
       error.value = 'Tu navegador no soporta geolocalización'
@@ -137,19 +161,13 @@ export function useGeolocation() {
       return
     }
 
-    // Opciones de alta precisión (GPS real) - CONFIGURACIÓN PROFESIONAL
     const options = {
-      enableHighAccuracy: true,  // FUERZA el uso de GPS (no Wi-Fi/celdas)
-      timeout: 10000,            // 10 segundos máximo (más tiempo para GPS)
-      maximumAge: 0              // NUNCA usar ubicaciones en caché
+      enableHighAccuracy: true,  // FORZAR GPS real
+      timeout: 10000,            // 10 segundos
+      maximumAge: 0              // NUNCA usar caché
     }
 
-    console.log('📶 Configuración GPS:', options)
-
-    // Obtener ubicación inicial
     navigator.geolocation.getCurrentPosition(updateLocation, handleError, options)
-
-    // Seguir actualizando ubicación
     watchId.value = navigator.geolocation.watchPosition(updateLocation, handleError, options)
   }
 

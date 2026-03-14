@@ -12,6 +12,11 @@ export default defineConfig({
         // VitePWA desactivado - usando SW manual en public/sw.js
     ],
     server: {
+        host: '0.0.0.0',
+        allowedHosts: ['.trycloudflare.com'],
+        hmr: {
+            host: 'localhost',
+        },
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

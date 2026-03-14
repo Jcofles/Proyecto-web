@@ -11,7 +11,7 @@ import { salonesBloquedD } from '@/data/salonesBloquedD';
 
 const { night, toggleTheme } = useTheme();
 const { userLocation, movementHeading, isInsideCampus, isLoading, error } = useGeolocation();
-const { heading: compassHeading, accuracy, isSupported, error: compassError } = useCompass();
+const { heading: compassHeading, accuracy, isSupported, error: compassError, startCompass, stopCompass } = useCompass();
 const compassSupported = ref(true);
 
 const MAP_CENTER = [4.1563, -74.8975]; 
@@ -457,6 +457,7 @@ watch(night, () => {
 // Watch para rotar el marcador según la BRÚJULA del dispositivo
 watch(compassHeading, (newHeading) => {
   if (marcadorUsuario.value && newHeading !== null && newHeading !== undefined && compassEnabled.value) {
+    // Usar el heading directamente (ya está corregido en el composable)
     const iconHtml = `
       <div style="position: relative; width: 44px; height: 44px; transform: rotate(${newHeading}deg);">
         <!-- Círculo de precisión -->
@@ -534,8 +535,20 @@ const requestAllPermissions = async () => {
   alert(message);
 };
 
-const toggleCompass = () => {
-  compassEnabled.value = !compassEnabled.value;
+const toggleCompass = async () => {
+  if (compassEnabled.value) {
+    stopCompass();
+    compassEnabled.value = false;
+    console.log('🧭 Brújula desactivada');
+  } else {
+    const started = await startCompass();
+    if (started) {
+      compassEnabled.value = true;
+      console.log('🧭 Brújula activada');
+    } else {
+      alert('No se pudo activar la brújula. Error: ' + (compassError.value || 'Desconocido'));
+    }
+  }
 };
 
 const testPermissions = async () => {
