@@ -21,10 +21,14 @@ class User extends Authenticatable
         'nombres',
         'apellidos',
         'email',
+        'secure_email',
         'password',
         'email_verified_at',
         'email_verification_token',
         'email_verification_expires_at',
+        'secure_key_hash',
+        'secure_key_generated_at',
+        'secure_key_downloaded_at',
         'status_id',
     ];
 
@@ -47,6 +51,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'secure_key_generated_at' => 'datetime',
+            'secure_key_downloaded_at' => 'datetime',
             'password' => 'hashed',
             'deleted_at' => 'datetime',
         ];

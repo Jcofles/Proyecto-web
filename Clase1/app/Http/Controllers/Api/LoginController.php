@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,21 +13,10 @@ use Carbon\Carbon;
 
 class LoginController extends Controller
 {
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Datos inválidos',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $email = $request->email;
+        $validated = $request->validated();
+        $email = $validated['email'];
         $user = User::where('email', $email)->first();
 
         // Si el usuario NO existe, retornar error genérico sin bloquear
@@ -49,7 +39,7 @@ class LoginController extends Controller
         }
 
         // Verificar contraseña
-        if (!Hash::check($request->password, $user->password)) {
+        if (!Hash::check($validated['password'], $user->password)) {
             // Incrementar intentos fallidos solo para usuarios existentes
             $this->recordFailedAttempt($email);
             
@@ -164,6 +154,9 @@ class LoginController extends Controller
                 'nombres' => $user->nombres,
                 'apellidos' => $user->apellidos,
                 'email' => $user->email,
+                'secure_email' => $user->secure_email,
+                'secure_key_downloaded_at' => $user->secure_key_downloaded_at,
+                'secure_key_generated_at' => $user->secure_key_generated_at,
             ],
         ], 200);
     }

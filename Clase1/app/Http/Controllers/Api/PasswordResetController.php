@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SendPasswordCodeRequest;
+use App\Http\Requests\VerifyPasswordCodeRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class PasswordResetController extends Controller
@@ -16,20 +17,10 @@ class PasswordResetController extends Controller
     /**
      * Enviar código de recuperación por email
      */
-    public function sendCode(Request $request)
+    public function sendCode(SendPasswordCodeRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'El correo no está registrado',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $email = $request->email;
+        $validated = $request->validated();
+        $email = $validated['email'];
         
         // Generar código de 6 dígitos
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -65,23 +56,13 @@ class PasswordResetController extends Controller
     /**
      * Verificar código
      */
-    public function verifyCode(Request $request)
+    public function verifyCode(VerifyPasswordCodeRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'code' => 'required|string|size:6',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Datos inválidos',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
+        $validated = $request->validated();
+        
         $record = DB::table('password_reset_codes')
-            ->where('email', $request->email)
-            ->where('code', $request->code)
+            ->where('email', $validated['email'])
+            ->where('code', $validated['code'])
             ->first();
 
         if (!$record) {
@@ -98,32 +79,21 @@ class PasswordResetController extends Controller
 
         return response()->json([
             'message' => 'Código verificado',
-            'email' => $request->email,
+            'email' => $validated['email'],
         ], 200);
     }
 
     /**
      * Restablecer contraseña
      */
-    public function resetPassword(Request $request)
+    public function resetPassword(ResetPasswordRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'code' => 'required|string|size:6',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validación fallida',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+        $validated = $request->validated();
 
         // Verificar código nuevamente
         $record = DB::table('password_reset_codes')
-            ->where('email', $request->email)
-            ->where('code', $request->code)
+            ->where('email', $validated['email'])
+            ->where('code', $validated['code'])
             ->first();
 
         if (!$record || Carbon::now()->isAfter($record->expires_at)) {
@@ -133,12 +103,12 @@ class PasswordResetController extends Controller
         }
 
         // Actualizar contraseña
-        $user = User::where('email', $request->email)->first();
-        $user->password = Hash::make($request->password);
+        $user = User::where('email', $validated['email'])->first();
+        $user->password = Hash::make($validated['password']);
         $user->save();
 
         // Eliminar código usado
-        DB::table('password_reset_codes')->where('email', $request->email)->delete();
+        DB::table('password_reset_codes')->where('email', $validated['email'])->delete();
 
         return response()->json([
             'message' => 'Contraseña actualizada exitosamente',

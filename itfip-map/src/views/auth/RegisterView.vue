@@ -155,6 +155,17 @@
           </div>
         </div>
 
+        <div class="field" :class="{ on: foc==='se', has: se }">
+          <label>Correo seguro</label>
+          <div class="fi">
+            <svg class="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="1" y="4" width="16" height="11" rx="2"/><path d="M1 6.5l8 5 8-5"/>
+            </svg>
+            <input type="email" v-model="se" placeholder="correo.seguro@dominio.com" required @focus="foc='se'" @blur="foc=''"/>
+            <span class="fbar"/>
+          </div>
+        </div>
+
         <div class="row2">
           <div class="field" :class="{ on: foc==='pw', has: pw, err: pwErr && cpw.length > 0 }">
             <label>Contraseña</label>
@@ -271,7 +282,7 @@ import { useTheme } from '@/composables/useTheme'
 const router = useRouter()
 
 // Form fields
-const fn = ref(''), ln = ref(''), em = ref(''), pw = ref(''), cpw = ref('')
+const fn = ref(''), ln = ref(''), em = ref(''), se = ref(''), pw = ref(''), cpw = ref('')
 const showPw = ref(false), foc = ref('')
 const loading = ref(false), resendLoading = ref(false)
 const success = ref(false), shaking = ref(false)
@@ -355,6 +366,7 @@ const submit = async () => {
       nombres: fn.value,
       apellidos: ln.value,
       email: em.value,
+      secure_email: se.value,
       password: pw.value,
       password_confirmation: cpw.value,
     })

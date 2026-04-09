@@ -3,55 +3,43 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\VerifyEmailRequest;
 use App\Models\User;
 use App\Models\PendingUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use App\Services\EmailService; // servicio dedicado para correos
+use App\Services\SecureKeyService;
 
 class RegisterController extends Controller
 {
     protected EmailService $emailService;
+    protected SecureKeyService $secureKeyService;
 
-    public function __construct(EmailService $emailService)
+    public function __construct(EmailService $emailService, SecureKeyService $secureKeyService)
     {
-        // inyectar el servicio de correo para poderlo reemplazar en tests si
-        // fuese necesario, o cambiar su implementación sin tocar el
-        // controlador.
         $this->emailService = $emailService;
+        $this->secureKeyService = $secureKeyService;
     }
 
     /**
      * Registrar nuevo usuario (sin confirmar email aún)
      */
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
         Log::info('=== INICIO REGISTRO ===');
         Log::info('Request data: ' . json_encode($request->all()));
         
         try {
-            // Validación de datos (aún no se escribe en `users`)
-            $validator = Validator::make($request->all(), [
-                'nombres' => 'required|string|max:191|regex:/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s]+$/',
-                'apellidos' => 'required|string|max:191|regex:/^[a-záéíóúñüA-ZÁÉÍÓÚÑÜ\s]+$/',
-                'email' => 'required|email|max:191',
-                'password' => 'required|string|min:8',
-                'password_confirmation' => 'required|string|same:password',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Validación fallida',
-                    'errors' => $validator->errors(),
-                ], 422);
-            }
-
-            $validated = $validator->validated();
+            // Los datos validados se obtienen automáticamente del FormRequest
+            $validated = $request->validated();
 
             // controlador de duplicados: pendientes y usuarios existentes
             $existingPending = PendingUser::where('email', $validated['email'])->first();
@@ -80,6 +68,7 @@ class RegisterController extends Controller
                 'nombres' => $validated['nombres'],
                 'apellidos' => $validated['apellidos'],
                 'email' => $validated['email'],
+                'secure_email' => $validated['secure_email'],
                 'password' => Hash::make($validated['password']),
                 'email_verification_token' => $token,
                 'email_verification_expires_at' => Carbon::now()->addHours(24),
@@ -135,21 +124,10 @@ class RegisterController extends Controller
     /**
      * Confirmar email del usuario
      */
-    public function verifyEmail(Request $request)
+    public function verifyEmail(VerifyEmailRequest $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'token' => 'required|string|size:64',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Token inválido',
-                    'errors' => $validator->errors(),
-                ], 422);
-            }
-
-            $token = $request->input('token');
+            $token = $request->validated('token');
 
             // Primero buscar en usuarios pendientes
             $pending = PendingUser::where('email_verification_token', $token)->first();
@@ -164,14 +142,17 @@ class RegisterController extends Controller
 
                 // Crear registro definitivo en users
                 // Obtener el ID del status 'activo'
-                $statusActivo = \DB::table('user_status')->where('nombre', 'activo')->value('id');
+                $statusActivo = DB::table('user_status')->where('nombre', 'activo')->value('id');
                 
                 $user = User::create([
                     'nombres' => $pending->nombres,
                     'apellidos' => $pending->apellidos,
                     'email' => $pending->email,
+                    'secure_email' => $pending->secure_email,
                     'password' => $pending->password,
                     'email_verified_at' => Carbon::now(),
+                    'secure_key_hash' => $this->secureKeyService->buildSecureKeyHash($pending->email, $pending->secure_email),
+                    'secure_key_generated_at' => Carbon::now(),
                     'status_id' => $statusActivo ?? 1,
                 ]);
 
@@ -181,6 +162,7 @@ class RegisterController extends Controller
                 return response()->json([
                     'message' => 'Email verificado exitosamente',
                     'user' => $user,
+                    'secure_key_generated' => true,
                 ], 200);
             }
 

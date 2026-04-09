@@ -25,6 +25,12 @@ const routes = [
     meta: { guest: true }
   },
   {
+    path: '/secure-key',
+    name: 'secure-key',
+    component: () => import('../views/auth/SecureKeyView.vue'),
+    meta: { guest: true }
+  },
+  {
     path: '/register',
     name: 'register',
     component: () => import('../views/auth/RegisterView.vue'),

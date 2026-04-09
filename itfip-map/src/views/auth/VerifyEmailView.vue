@@ -76,6 +76,7 @@ onMounted(async () => {
     await auth.verifyEmail(token)
     success.value = true
     loading.value = false
+    localStorage.setItem('secureKeyGenerated', '1')
     
     setTimeout(() => {
       router.push('/login')

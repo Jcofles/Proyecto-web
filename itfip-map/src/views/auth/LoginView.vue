@@ -143,6 +143,14 @@
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
+            <div class="forgot-row">
+              <router-link class="forgot-btn" to="/secure-key">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M11 7a2 2 0 012 2m2 0a4 4 0 01-5.5 3.7L8 14H6v2H4v2H2a1 1 0 01-1-1v-1.6a1 1 0 01.3-.7l4-4A4 4 0 0115 9z" stroke-linecap="round"/>
+                </svg>
+                Ingresar con clave segura
+              </router-link>
+            </div>
 
             <!-- Error Message -->
             <Transition name="err-msg">
@@ -203,6 +211,16 @@
                 <span class="fbar"/>
               </div>
             </div>
+
+
+            <Transition name="err-msg">
+              <div v-if="recoverInfo" class="info-alert">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="6.5"/><path d="M6.5 8.5l1.5 1.5 3-3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>{{ recoverInfo }}</span>
+              </div>
+            </Transition>
 
             <!-- CAPTCHA visual -->
             <div class="captcha-wrap">
@@ -534,6 +552,7 @@ const captchaChecked = ref(false)
 const captchaLoading = ref(false)
 const resendCooldown = ref(0)
 const recoverError = ref('')
+const recoverInfo = ref('')
 let resendTimer = null
 
 /* ── Nueva contraseña ── */
@@ -694,6 +713,7 @@ function submitRecoverEmail() {
   if (!captchaChecked.value) return
   recoverLoading.value = true
   recoverError.value = ''
+  recoverInfo.value = ''
   
   auth.forgotPassword(recoverEmail.value)
     .then(() => {
@@ -708,6 +728,7 @@ function submitRecoverEmail() {
       recoverError.value = error.message || 'Error al enviar el código'
     })
 }
+
 
 function startResendCooldown() {
   resendCooldown.value = 60

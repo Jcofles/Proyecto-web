@@ -12,6 +12,7 @@ class PendingUser extends Model
         'nombres',
         'apellidos',
         'email',
+        'secure_email',
         'password',
         'email_verification_token',
         'email_verification_expires_at',

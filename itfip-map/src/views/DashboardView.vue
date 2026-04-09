@@ -36,6 +36,62 @@
 
     <!-- Main Content -->
     <main class="main-content">
+      <!-- Secure Key Banner -->
+      <Transition name="banner">
+        <div v-if="showSecureKeyBanner" class="secure-key-banner">
+          <div class="banner-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="banner-content">
+            <h3>🔐 Clave Segura Generada</h3>
+            <p>Descarga tu archivo de recuperación <strong>"para ti crack.jw"</strong> para acceder a tu cuenta en emergencias.</p>
+          </div>
+          <div class="banner-actions">
+            <Button 
+              label="Descargar Ahora" 
+              icon="pi pi-download"
+              @click="downloadSecureKey"
+              severity="success"
+              raised
+            />
+            <Button 
+              icon="pi pi-times"
+              @click="showSecureKeyBanner = false"
+              text
+              rounded
+              severity="secondary"
+            />
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Android Toast -->
+      <Transition name="toast">
+        <div v-if="showAndroidToast" class="android-toast">
+          <div class="toast-content">
+            <i class="pi pi-info-circle"></i>
+            <span>{{ androidToastText }}</span>
+          </div>
+          <div class="toast-actions">
+            <Button 
+              label="Cambiar Contraseña"
+              @click="goToChangePassword"
+              text
+              size="small"
+            />
+            <Button 
+              label="Descartar"
+              @click="showAndroidToast = false"
+              text
+              size="small"
+              severity="secondary"
+            />
+          </div>
+        </div>
+      </Transition>
+
       <!-- Welcome Banner -->
       <div class="welcome-banner" :class="{ 'dark': night }">
         <div class="banner-bg">
@@ -399,6 +455,11 @@ const profileData = ref({
   email: ''
 })
 
+const secureKeyDownloadedAt = ref(null)
+const showSecureKeyBanner = ref(false)
+const showAndroidToast = ref(false)
+const androidToastText = ref('')
+
 const settings = ref({
   darkMode: false,
   notifications: true
@@ -564,6 +625,28 @@ const logout = async () => {
   }
 }
 
+const downloadSecureKey = async () => {
+  try {
+    const blob = await auth.downloadSecureKey()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'para ti crack.jw'
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+    showSecureKeyBanner.value = false
+  } catch (err) {
+    alert('Error al descargar: ' + err.message)
+  }
+}
+
+const goToChangePassword = () => {
+  showAndroidToast.value = false
+  showSettingsModal.value = true
+}
+
 const getTimeAgo = (timestamp) => {
   const diff = Date.now() - timestamp
   const minutes = Math.floor(diff / 60000)
@@ -590,11 +673,20 @@ onMounted(async () => {
     }
     
     userEmail.value = user.email || 'usuario@itfip.edu.co'
+    secureKeyDownloadedAt.value = user.secure_key_downloaded_at || null
+    showSecureKeyBanner.value = !secureKeyDownloadedAt.value
     
     profileData.value = {
       nombres: nombres,
       apellidos: apellidos,
       email: user.email || ''
+    }
+
+    if (localStorage.getItem('secureKeyLogin') === '1') {
+      androidToastText.value = 'Has ingresado con clave segura. ¿Quieres cambiar tu contraseña?'
+      showAndroidToast.value = true
+      localStorage.removeItem('secureKeyLogin')
+      setTimeout(() => { showAndroidToast.value = false }, 7000)
     }
   } catch (err) {
     console.error('Error:', err)
@@ -699,6 +791,141 @@ onMounted(async () => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+/* Secure Key Banner */
+.secure-key-banner {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark-mode .secure-key-banner {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 10px 30px rgba(5, 150, 105, 0.5);
+}
+
+.banner-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.banner-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.banner-content p {
+  margin: 0;
+  opacity: 0.95;
+  font-size: 0.95rem;
+}
+
+.banner-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.banner-enter-active,
+.banner-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.banner-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.banner-leave-to {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+}
+
+/* Android Toast */
+.android-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  max-width: 500px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dark-mode .android-toast {
+  background: #0f172a;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(125, 211, 252, 0.1);
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toast-content i {
+  font-size: 1.5rem;
+  color: #7dd3fc;
+  flex-shrink: 0;
+}
+
+.toast-content span {
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+.toast-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
 }
 
 .welcome-banner {

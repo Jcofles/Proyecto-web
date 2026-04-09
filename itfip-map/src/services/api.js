@@ -209,6 +209,60 @@ export const auth = {
       body: JSON.stringify({ email, code, password, password_confirmation }),
     })
   },
+
+  /**
+   * Iniciar sesión usando el archivo seguro .jw
+   */
+  loginWithSecureKey: async (email, fileContent) => {
+    const data = await request('/auth/login-with-key', {
+      method: 'POST',
+      body: JSON.stringify({ email, secure_key_content: fileContent }),
+    })
+    if (data.token) {
+      localStorage.setItem('auth_token', data.token)
+    }
+    return data
+  },
+
+  /**
+   * Enviar el archivo seguro al correo seguro registrado
+   */
+  sendSecureKeyEmail: async (email) => {
+    return request('/auth/send-secure-key-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+
+  /**
+   * Descargar el archivo seguro desde el dashboard
+   */
+  downloadSecureKey: async () => {
+    const url = `${API_BASE_URL}/auth/secure-key-download`
+    const token = localStorage.getItem('auth_token')
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : undefined,
+      },
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      let message = 'Error al descargar el archivo seguro'
+      try {
+        const data = JSON.parse(text)
+        message = data.message || message
+      } catch (e) {
+        // ignore
+      }
+      throw { status: response.status, message }
+    }
+
+    const blob = await response.blob()
+    return blob
+  },
 }
 
 /**
