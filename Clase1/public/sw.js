@@ -43,20 +43,29 @@ self.addEventListener('activate', (event) => {
 
 // Evento fetch - Estrategia Network First
 self.addEventListener('fetch', (event) => {
-  // Solo cachear peticiones GET
-  if (event.request.method !== 'GET') {
+  // Solo cachear peticiones GET y excluir rutas problemáticas
+  if (event.request.method !== 'GET' || 
+      event.request.url.includes('/api/') ||
+      event.request.url.includes('/register') ||
+      event.request.url.includes('/login') ||
+      event.request.url.includes('/auth/')) {
     return;
   }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
+        // Solo cachear respuestas válidas
+        if (!response || response.status !== 200 || response.type !== 'basic') {
+          return response;
+        }
+        
         // Clonar la respuesta
         const responseToCache = response.clone();
         
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
-        });
+        }).catch(() => {});
         
         return response;
       })

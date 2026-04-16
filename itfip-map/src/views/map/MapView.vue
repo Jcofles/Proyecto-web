@@ -944,11 +944,11 @@ const testPermissions = async () => {
 /* Posicionar controles de zoom de Leaflet */
 :deep(.leaflet-control-zoom) {
   margin-left: 10px !important;
-  margin-top: 80px !important;
+  margin-top: 120px !important;
 }
 
 /* ── Toggle ── */
-.tog-area{position:fixed;top:18px;left:18px;z-index:1002;display:flex;align-items:center;gap:10px}
+.tog-area{position:fixed;top:60px;left:18px;z-index:1002;display:flex;align-items:center;gap:10px}
 .tog-lbl{font-family:var(--FM);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--b);text-shadow:0 0 10px rgba(125,211,252,.4);transition:color .4s;user-select:none}
 .wrap.day .tog-lbl{text-shadow:0 0 8px rgba(14,165,233,.3)}
 .tog{background:none;border:none;cursor:pointer;padding:0}
@@ -972,7 +972,7 @@ const testPermissions = async () => {
 /* Compass Toggle */
 .compass-toggle {
   position: fixed;
-  top: 80px;
+  top: 120px;
   left: 18px;
   z-index: 1002;
   display: flex;
@@ -983,7 +983,7 @@ const testPermissions = async () => {
 
 .location-toggle {
   position: fixed;
-  top: 280px;
+  top: 320px;
   left: 18px;
   z-index: 1002;
 }
@@ -1411,7 +1411,17 @@ const testPermissions = async () => {
   }
   
   .tog-area {
-    top: 12px;
+    top: 50px;
+    left: 12px;
+  }
+  
+  .compass-toggle {
+    top: 100px;
+    left: 12px;
+  }
+  
+  .location-toggle {
+    top: 210px;
     left: 12px;
   }
 }
@@ -1427,6 +1437,21 @@ const testPermissions = async () => {
   .user-menu-container {
     top: 12px;
     right: 12px;
+  }
+  
+  .tog-area {
+    top: 45px;
+    left: 12px;
+  }
+  
+  .compass-toggle {
+    top: 90px;
+    left: 12px;
+  }
+  
+  .location-toggle {
+    top: 190px;
+    left: 12px;
   }
   
   .brand-box {

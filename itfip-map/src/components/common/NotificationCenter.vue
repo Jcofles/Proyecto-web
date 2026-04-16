@@ -76,7 +76,7 @@ defineExpose({
 <style scoped>
 .notifications-container {
   position: fixed;
-  top: 100px;
+  top: 80px;
   right: 20px;
   z-index: 2000;
   display: flex;
@@ -192,6 +192,7 @@ defineExpose({
 
 @media (max-width: 768px) {
   .notifications-container {
+    top: 70px;
     right: 10px;
     left: 10px;
     max-width: none;

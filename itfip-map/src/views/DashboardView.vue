@@ -791,6 +791,7 @@ onMounted(async () => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+  padding-top: 80px; /* Espacio mínimo para las migajas pequeñas */
 }
 
 /* Secure Key Banner */
@@ -1667,6 +1668,7 @@ body:has(.dark-mode) .p-dialog-footer {
 @media (max-width: 768px) {
   .main-content {
     padding: 1rem;
+    padding-top: 90px; /* Más espacio para las migajas en móvil */
   }
 
   .welcome-banner {

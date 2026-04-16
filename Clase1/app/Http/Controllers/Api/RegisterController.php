@@ -80,16 +80,9 @@ class RegisterController extends Controller
                 Log::info('Email de verificación enviado a: ' . $pending->email);
             } catch (\Exception $e) {
                 Log::warning('No se pudo enviar email de verificación: ' . $e->getMessage());
-                Log::warning('Stack trace: ' . $e->getTraceAsString());
                 // Continuar aunque falle el envío del email
             }
 
-            // construimos la URL de verificación para devolverla en el
-            // json cuando estamos en entorno local o usando el driver "log",
-            // lo cual facilita las pruebas manuales sin tener que leer el
-            // fichero de logs.
-            // los correos deben dirigir al frontend para que la SPA maneje la
-            // animación y la redirección a MapView
             $verificationUrl = env('APP_FRONTEND_URL', 'http://localhost:5174') .
                                '/verify-email?token=' . $token;
 
@@ -116,7 +109,7 @@ class RegisterController extends Controller
             
             return response()->json([
                 'message' => 'Error al registrar usuario',
-                'error' => $e->getMessage(),
+                'error' => app()->isLocal() ? $e->getMessage() : 'Error interno del servidor',
             ], 500);
         }
     }

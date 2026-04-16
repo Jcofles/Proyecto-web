@@ -520,8 +520,10 @@ import { useRouter } from 'vue-router'
 import EveAssistant from '@/components/common/EveAssistant.vue'
 import { auth } from '@/services/api'
 import { useTheme } from '@/composables/useTheme'
+import { useBreadcrumbs } from '@/composables/useBreadcrumbs'
 
 const router = useRouter()
+const { setRecoverMode } = useBreadcrumbs()
 
 /* ── Estado general ── */
 const { night, toggleTheme: toggleThemeComposable } = useTheme()
@@ -636,6 +638,9 @@ function startRecover() {
   isBlocked.value = false
   loginError.value = ''
   if (countdownInterval) clearInterval(countdownInterval)
+  
+  // Actualizar breadcrumbs para mostrar modo recuperar
+  setRecoverMode(true)
 }
 
 function backToLogin() {
@@ -646,6 +651,9 @@ function backToLogin() {
   confirmNewPw.value = ''
   captchaChecked.value = false
   recoverError.value = ''
+  
+  // Actualizar breadcrumbs para volver al modo login normal
+  setRecoverMode(false)
 }
 
 function submitLogin() {
@@ -788,6 +796,8 @@ function submitNewPassword() {
 
 function goToLogin() {
   backToLogin()
+  // Asegurar que las migajas vuelvan al estado normal
+  setRecoverMode(false)
 }
 
 /* ══════════════ CANVAS ══════════════ */
