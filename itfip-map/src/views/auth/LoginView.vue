@@ -180,9 +180,6 @@
                     <circle cx="9" cy="9" r="2.2"/>
                   </svg>
                   <span>{{ isBlocked ? 'Bloqueado' : 'Iniciar sesión' }}</span>
-                  <svg class="btn-arr" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9h12M11 5l4 4-4 4"/>
-                  </svg>
                 </template>
                 <span v-else class="dots"><i/><i/><i/></span>
               </span>
@@ -190,6 +187,47 @@
           </form>
 
           <p class="foot">¿No tienes cuenta? <router-link to="/register" class="fl">Crear cuenta →</router-link></p>
+        </div>
+      </Transition>
+
+      <Transition name="panel" mode="out-in">
+        <div v-if="mode === 'twofactor'" key="twofactor" class="panel">
+          <div class="form" autocomplete="off">
+            <div class="field" :class="{ on: foc==='code', has: twoFactorCode }">
+              <label>Código de autenticación</label>
+              <div class="fi">
+                <svg class="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="1" y="5" width="16" height="10" rx="2"/>
+                  <path d="M5 9h1.5M8.5 9H10M12 9h1" stroke-linecap="round"/>
+                </svg>
+                <input type="text" v-model="twoFactorCode" placeholder="1Mau-80mQ-hqL2" maxlength="14" required
+                  @input="formatTwoFactorCode" @keyup.enter="submitTwoFactor"
+                  @focus="foc='code'" @blur="foc=''"/>
+                <span class="fbar"/>
+              </div>
+              <p class="field-hint">El código expira en 3 minutos.</p>
+            </div>
+
+            <Transition name="err-msg">
+              <div v-if="twoFactorError" class="error-alert">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 10.5v.5" stroke-linecap="round"/>
+                </svg>
+                <span>{{ twoFactorError }}</span>
+              </div>
+            </Transition>
+
+            <button type="button" class="btn" :disabled="twoFactorLoading || !twoFactorCode" @click="submitTwoFactor">
+              <span class="btn-bg"/>
+              <span class="btn-shimmer"/>
+              <span class="btn-inner">
+                <template v-if="!twoFactorLoading">
+                  <span>Autenticar código</span>
+                </template>
+                <span v-else class="dots"><i/><i/><i/></span>
+              </span>
+            </button>
+          </div>
         </div>
       </Transition>
 
@@ -281,9 +319,6 @@
                     <rect x="3" y="8" width="12" height="9" rx="2"/><path d="M6 8V5.5a3 3 0 0 1 6 0V8"/>
                   </svg>
                   <span>Recuperar contraseña</span>
-                  <svg class="btn-arr" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9h12M11 5l4 4-4 4"/>
-                  </svg>
                 </template>
                 <span v-else class="dots"><i/><i/><i/></span>
               </span>
@@ -366,9 +401,6 @@
                     <circle cx="9" cy="9" r="2.2"/>
                   </svg>
                   <span>Verificar código</span>
-                  <svg class="btn-arr" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9h12M11 5l4 4-4 4"/>
-                  </svg>
                 </template>
                 <span v-else class="dots"><i/><i/><i/></span>
               </span>
@@ -462,9 +494,6 @@
                     <circle cx="9" cy="9" r="2.2"/>
                   </svg>
                   <span>Guardar contraseña</span>
-                  <svg class="btn-arr" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9h12M11 5l4 4-4 4"/>
-                  </svg>
                 </template>
                 <span v-else class="dots"><i/><i/><i/></span>
               </span>
@@ -501,9 +530,6 @@
                   <circle cx="9" cy="9" r="2.2"/>
                 </svg>
                 <span>Iniciar sesión</span>
-                <svg class="btn-arr" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 9h12M11 5l4 4-4 4"/>
-                </svg>
               </span>
             </button>
           </div>
@@ -533,7 +559,7 @@ const shaking  = ref(false)
 const foc      = ref('')
 
 /* ── Login ── */
-const mode     = ref('login')  // 'login' | 'recover'
+const mode     = ref('login')  // 'login' | 'recover' | 'twofactor'
 const em       = ref('')
 const pw       = ref('')
 const showPw   = ref(false)
@@ -543,6 +569,10 @@ const loginError = ref('')
 const remainingAttempts = ref(null)
 const isBlocked = ref(false)
 const blockCountdown = ref(0)
+const twoFactorCode = ref('')
+const twoFactorEmail = ref('')
+const twoFactorError = ref('')
+const twoFactorLoading = ref(false)
 let countdownInterval = null
 
 /* ── Recuperar ── */
@@ -566,13 +596,14 @@ const newPwErr      = ref(false)
 /* ── Títulos dinámicos ── */
 const TITLES = {
   login:    { title: 'Iniciar sesión',          sub: '' },
+  twofactor:{ title: 'Verifica tu código',      sub: 'Revisa tu correo y escribe el código' },
   r1:       { title: 'Recuperar contraseña',    sub: 'Ingresa tu correo para continuar' },
   r2:       { title: 'Código de verificación',  sub: 'Revisa tu correo electrónico' },
   r3:       { title: 'Nueva contraseña',        sub: 'Elige una contraseña segura' },
   r4:       { title: '¡Listo!',                 sub: 'Contraseña restablecida' },
 }
 const stepKey = computed(() =>
-  mode.value === 'login' ? 'login' : `r${recoverStep.value}`
+  mode.value === 'login' ? 'login' : mode.value === 'twofactor' ? 'twofactor' : `r${recoverStep.value}`
 )
 const stepTitle = computed(() => TITLES[stepKey.value]?.title ?? '')
 const stepSub   = computed(() => TITLES[stepKey.value]?.sub   ?? '')
@@ -668,8 +699,17 @@ function submitLogin() {
   remainingAttempts.value = null
   
   auth.login(em.value, pw.value)
-    .then(() => {
+    .then((data) => {
       loading.value = false
+
+      if (data.two_factor_required) {
+        mode.value = 'twofactor'
+        twoFactorEmail.value = em.value
+        twoFactorCode.value = ''
+        loginError.value = ''
+        return
+      }
+
       router.push('/map')
     })
     .catch(error => {
@@ -693,6 +733,42 @@ function submitLogin() {
         loginError.value = error.message || 'Credenciales incorrectas'
       }
     })
+}
+
+function formatTwoFactorCode(event) {
+  const raw = event.target.value.replace(/[^a-zA-Z0-9]/g, '')
+  const trimmed = raw.slice(0, 12)
+  const groups = trimmed.match(/.{1,4}/g)
+  twoFactorCode.value = groups ? groups.join('-') : ''
+}
+
+function submitTwoFactor() {
+  if (!twoFactorCode.value || !twoFactorEmail.value) {
+    twoFactorError.value = 'Ingresa el código de 2FA que recibiste por correo.'
+    return
+  }
+
+  twoFactorLoading.value = true
+  twoFactorError.value = ''
+
+  auth.verifyTwoFactor(twoFactorEmail.value, twoFactorCode.value)
+    .then((data) => {
+      twoFactorLoading.value = false
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token)
+        router.push('/map')
+      }
+    })
+    .catch(error => {
+      twoFactorLoading.value = false
+      twoFactorError.value = error.message || 'Código inválido o expirado.'
+    })
+}
+
+function cancelTwoFactor() {
+  mode.value = 'login'
+  twoFactorCode.value = ''
+  twoFactorError.value = ''
 }
 
 function startCountdown() {
@@ -1267,9 +1343,7 @@ onUnmounted(()=>{
 .btn:not(:disabled):hover .btn-shimmer{animation:shimBtn .8s ease forwards}
 @keyframes shimBtn{from{transform:translateY(-100%)}to{transform:translateY(100%)}}
 .btn-inner{position:relative;z-index:1;display:flex;align-items:center;gap:8px}
-.btn-pin,.btn-arr{width:16px;height:16px;flex-shrink:0}
-.btn-arr{transition:transform .28s}
-.btn:not(:disabled):hover .btn-arr{transform:translateX(5px)}
+.btn-pin{width:16px;height:16px;flex-shrink:0}
 .dots{display:flex;align-items:center;gap:4px}
 .dots i{display:block;width:6px;height:6px;background:white;border-radius:50%;animation:bnc .9s ease infinite}
 .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
@@ -1307,7 +1381,7 @@ onUnmounted(()=>{
   .ico{left:10px;width:13px;height:13px}
   .eye svg{width:14px;height:14px}
   .btn{padding:12px;font-size:12.5px;letter-spacing:1px}
-  .btn-pin,.btn-arr{width:14px;height:14px}
+  .btn-pin{width:14px;height:14px}
   .hud{top:8px;left:10px;gap:2px}
   .hud-coord{font-size:8.5px}.hud-label{font-size:8px}
   .hud-time{font-size:10px;letter-spacing:1px}

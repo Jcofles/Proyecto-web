@@ -7,6 +7,8 @@ use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -61,13 +63,15 @@ class LoginController extends Controller
         }
 
         // Validar estados
-        if ($user->status === 'bloqueado') {
+        $statusNombre = $user->statusRelation->nombre ?? 'activo';
+        
+        if ($statusNombre === 'bloqueado') {
             return response()->json([
                 'message' => 'Tu cuenta ha sido bloqueada. Contacta al administrador.',
             ], 403);
         }
 
-        if ($user->status === 'eliminado') {
+        if ($statusNombre === 'eliminado') {
             return response()->json([
                 'message' => 'Esta cuenta ha sido eliminada.',
             ], 403);
@@ -80,8 +84,20 @@ class LoginController extends Controller
             ], 403);
         }
 
+        // Si 2FA está activo, enviar código y pedir verificación
+        if ($user->two_factor_enabled) {
+            $this->sendTwoFactorCode($user);
+
+            return response()->json([
+                'message' => 'Código de autenticación enviado al correo registrado',
+                'two_factor_required' => true,
+                'expires_in' => 180,
+            ], 200);
+        }
+
         // Actualizar estado a activo al iniciar sesión
-        $user->status = 'activo';
+        $activoId = \App\Models\UserStatus::where('nombre', 'activo')->value('id');
+        $user->status_id = $activoId;
         $user->save();
 
         // Login exitoso - limpiar intentos
@@ -99,6 +115,37 @@ class LoginController extends Controller
                 'status' => $user->status,
             ],
         ], 200);
+    }
+
+    private function sendTwoFactorCode(User $user): void
+    {
+        $code = $this->generateTwoFactorCode();
+
+        $user->two_factor_code_hash = hash('sha256', $code);
+        $user->two_factor_expires_at = Carbon::now()->addMinutes(3);
+        $user->save();
+
+        try {
+            Mail::raw("Tu código de autenticación en dos pasos es: {$code}\n\nEste código expira en 3 minutos.", function ($message) use ($user) {
+                $message->to($user->email)
+                        ->subject('Código de autenticación en dos pasos');
+            });
+        } catch (\Exception $e) {
+            Log::error('Error enviando código 2FA: ' . $e->getMessage());
+            throw new \Exception('No se pudo enviar el código de autenticación. Intenta nuevamente.');
+        }
+    }
+
+    private function generateTwoFactorCode(): string
+    {
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        $code = '';
+
+        for ($i = 0; $i < 12; $i++) {
+            $code .= $characters[random_int(0, strlen($characters) - 1)];
+        }
+
+        return substr($code, 0, 4) . '-' . substr($code, 4, 4) . '-' . substr($code, 8, 4);
     }
 
     private function recordFailedAttempt($email)
@@ -134,7 +181,8 @@ class LoginController extends Controller
         $user = $request->user();
         
         // Cambiar estado a inactivo al cerrar sesión
-        $user->status = 'inactivo';
+        $inactivoId = \App\Models\UserStatus::where('nombre', 'inactivo')->value('id');
+        $user->status_id = $inactivoId;
         $user->save();
         
         $request->user()->currentAccessToken()->delete();
@@ -157,6 +205,7 @@ class LoginController extends Controller
                 'secure_email' => $user->secure_email,
                 'secure_key_downloaded_at' => $user->secure_key_downloaded_at,
                 'secure_key_generated_at' => $user->secure_key_generated_at,
+                'two_factor_enabled' => $user->two_factor_enabled,
             ],
         ], 200);
     }
@@ -271,7 +320,8 @@ class LoginController extends Controller
         $user->email = "deleted_{$timestamp}_{$originalEmail}";
         
         // Cambiar estado a eliminado
-        $user->status = 'eliminado';
+        $eliminadoId = \App\Models\UserStatus::where('nombre', 'eliminado')->value('id');
+        $user->status_id = $eliminadoId;
         $user->save();
         
         // Cerrar todas las sesiones

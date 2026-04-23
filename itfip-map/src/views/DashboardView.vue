@@ -390,6 +390,19 @@
           />
           <label for="notifications">Notificaciones</label>
         </div>
+        <div class="checkbox-item">
+          <Checkbox
+            v-model="settings.twoFactorEnabled"
+            binary
+            inputId="twoFactorEnabled"
+            :disabled="updatingTwoFactor"
+            @change="toggleTwoFactor"
+          />
+          <label for="twoFactorEnabled">Autenticación en dos pasos</label>
+        </div>
+        <p class="field-hint" v-if="settings.twoFactorEnabled">Se enviará un código al correo para iniciar sesión.</p>
+        <p class="field-hint" v-else>Desactiva para iniciar sesión solo con contraseña.</p>
+        <p class="field-hint success" v-if="twoFactorMessage">{{ twoFactorMessage }}</p>
       </div>
       
       <Divider />
@@ -462,8 +475,11 @@ const androidToastText = ref('')
 
 const settings = ref({
   darkMode: false,
-  notifications: true
+  notifications: true,
+  twoFactorEnabled: false,
 })
+const updatingTwoFactor = ref(false)
+const twoFactorMessage = ref('')
 
 const searchResults = ref([])
 const allSalones = ref([
@@ -600,6 +616,26 @@ const saveProfile = async () => {
   }
 }
 
+const toggleTwoFactor = async () => {
+  updatingTwoFactor.value = true
+  twoFactorMessage.value = ''
+
+  try {
+    if (settings.value.twoFactorEnabled) {
+      await auth.enableTwoFactor()
+      twoFactorMessage.value = 'Autenticación en dos pasos activada. En el próximo inicio de sesión llegará un código al correo.'
+    } else {
+      await auth.disableTwoFactor()
+      twoFactorMessage.value = 'Autenticación en dos pasos desactivada.'
+    }
+  } catch (err) {
+    settings.value.twoFactorEnabled = !settings.value.twoFactorEnabled
+    alert(err.message || 'No se pudo cambiar la configuración de seguridad.')
+  } finally {
+    updatingTwoFactor.value = false
+  }
+}
+
 const confirmDeleteAccount = () => {
   if (confirm('⚠️ ¿Eliminar cuenta permanentemente?')) {
     deleteAccount()
@@ -675,9 +711,8 @@ onMounted(async () => {
     userEmail.value = user.email || 'usuario@itfip.edu.co'
     secureKeyDownloadedAt.value = user.secure_key_downloaded_at || null
     showSecureKeyBanner.value = !secureKeyDownloadedAt.value
-    
+    settings.value.twoFactorEnabled = user.two_factor_enabled || false
     profileData.value = {
-      nombres: nombres,
       apellidos: apellidos,
       email: user.email || ''
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\RegisterController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\SecureKeyController;
+use App\Http\Controllers\Api\TwoFactorController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,9 +24,12 @@ Route::post('auth/verify-email', [RegisterController::class, 'verifyEmail']);
 Route::post('auth/resend-verification', [RegisterController::class, 'resendVerification']);
 Route::post('auth/login-with-key', [SecureKeyController::class, 'loginWithKey']);
 Route::post('auth/send-secure-key-email', [SecureKeyController::class, 'sendSecureKeyEmail']);
+Route::post('auth/two-factor/verify', [TwoFactorController::class, 'verify']);
 
 // Rutas protegidas
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('auth/two-factor/enable', [TwoFactorController::class, 'enable']);
+    Route::post('auth/two-factor/disable', [TwoFactorController::class, 'disable']);
     Route::post('auth/logout', [LoginController::class, 'logout']);
     Route::get('auth/user', [LoginController::class, 'user']);
     Route::put('auth/update-profile', [LoginController::class, 'updateProfile']);

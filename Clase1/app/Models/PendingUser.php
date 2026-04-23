@@ -16,6 +16,7 @@ class PendingUser extends Model
         'password',
         'email_verification_token',
         'email_verification_expires_at',
+        'status_id',
     ];
     
     protected $casts = [

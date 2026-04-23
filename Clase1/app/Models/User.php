@@ -29,6 +29,7 @@ class User extends Authenticatable
         'secure_key_hash',
         'secure_key_generated_at',
         'secure_key_downloaded_at',
+        'two_factor_enabled',
         'status_id',
     ];
 
@@ -53,6 +54,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'secure_key_generated_at' => 'datetime',
             'secure_key_downloaded_at' => 'datetime',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_expires_at' => 'datetime',
             'password' => 'hashed',
             'deleted_at' => 'datetime',
         ];

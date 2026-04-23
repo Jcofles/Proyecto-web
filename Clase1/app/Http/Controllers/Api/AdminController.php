@@ -15,7 +15,8 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($userId);
         
-        $user->status = 'bloqueado';
+        $bloqueadoId = \App\Models\UserStatus::where('nombre', 'bloqueado')->value('id');
+        $user->status_id = $bloqueadoId;
         $user->save();
         
         // Cerrar todas las sesiones del usuario bloqueado
@@ -39,7 +40,8 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($userId);
         
-        $user->status = 'inactivo';
+        $inactivoId = \App\Models\UserStatus::where('nombre', 'inactivo')->value('id');
+        $user->status_id = $inactivoId;
         $user->save();
 
         return response()->json([

@@ -131,6 +131,34 @@ export const auth = {
   },
 
   /**
+   * Activar autenticación en dos pasos
+   */
+  enableTwoFactor: async () => {
+    return request('/auth/two-factor/enable', {
+      method: 'POST',
+    })
+  },
+
+  /**
+   * Desactivar autenticación en dos pasos
+   */
+  disableTwoFactor: async () => {
+    return request('/auth/two-factor/disable', {
+      method: 'POST',
+    })
+  },
+
+  /**
+   * Verificar código de 2FA enviado por correo
+   */
+  verifyTwoFactor: async (email, code) => {
+    return request('/auth/two-factor/verify', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    })
+  },
+
+  /**
    * Eliminar cuenta
    */
   deleteAccount: async () => {

@@ -11,6 +11,10 @@ return new class extends Migration
     {
         // SQLite no soporta MODIFY COLUMN, usar recrear tabla
         if (DB::getDriverName() === 'sqlite') {
+            if (!Schema::hasColumn('users', 'status')) {
+                return;
+            }
+
             // Para SQLite, recrear la tabla
             Schema::table('users', function (Blueprint $table) {
                 $table->dropColumn('status');
