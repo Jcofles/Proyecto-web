@@ -25,13 +25,11 @@ class Cors
             'null',
         ];
         
-        // Auto-detectar dominios de Cloudflare
         $host = parse_url($origin, PHP_URL_HOST) ?? '';
-        $isCloudflare = str_ends_with($host, '.trycloudflare.com');
         $isLocalhost = in_array($origin, $allowed) || str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
-        
-        // Permitir cualquier origen de Cloudflare o localhost
-        $allowOrigin = ($origin && ($isLocalhost || $isCloudflare)) ? $origin : '*';
+
+        // Permitir únicamente orígenes locales o los listados en $allowed.
+        $allowOrigin = ($origin && $isLocalhost) ? $origin : '*';
         
         // Manejar preflight OPTIONS
         if ($request->isMethod('OPTIONS')) {
