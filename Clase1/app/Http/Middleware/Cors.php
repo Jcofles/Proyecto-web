@@ -16,6 +16,15 @@ class Cors
         $origin = $request->headers->get('Origin');
         $originHost = parse_url($origin, PHP_URL_HOST) ?? '';
 
+        // Debug logging
+        \Log::debug('CORS Debug', [
+            'origin' => $origin,
+            'originHost' => $originHost,
+            'app_env' => env('APP_ENV'),
+            'sanctum_domains' => env('SANCTUM_STATEFUL_DOMAINS'),
+            'app_frontend_url' => env('APP_FRONTEND_URL'),
+        ]);
+
         // Dominios permitidos locales
         $localAllowed = [
             'localhost:5173',
@@ -40,6 +49,11 @@ class Cors
             }
         }
 
+        \Log::debug('CORS Production Domains', [
+            'productionDomains' => $productionDomains,
+            'localAllowed' => $localAllowed,
+        ]);
+
         // Verificar si el origen es local o está en la lista de dominios permitidos
         $isAllowed = false;
         if (in_array($originHost, $localAllowed, true)) {
@@ -47,6 +61,11 @@ class Cors
         } elseif (in_array($originHost, $productionDomains, true)) {
             $isAllowed = true;
         }
+
+        \Log::debug('CORS Check Result', [
+            'isAllowed' => $isAllowed,
+            'allowOrigin' => ($isAllowed && $origin) ? $origin : 'NOT ALLOWED',
+        ]);
 
         $allowOrigin = ($isAllowed && $origin) ? $origin : '';
         
