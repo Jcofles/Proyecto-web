@@ -43,11 +43,11 @@ class Cors
 
         // Dominios de producción desde SANCTUM_STATEFUL_DOMAINS (solo hosts)
         $productionDomains = array_filter(
-            array_map(fn($domain) => parse_url(trim($domain), PHP_URL_HOST) ?: trim($domain), explode(',', env('SANCTUM_STATEFUL_DOMAINS', '')))
+            array_map(fn($domain) => parse_url(trim($domain), PHP_URL_HOST) ?: trim($domain), explode(',', config('sanctum.stateful', '')))
         );
 
         // Incluir el host de APP_FRONTEND_URL
-        $frontendUrl = env('APP_FRONTEND_URL');
+        $frontendUrl = config('app.frontend_url');
         if ($frontendUrl) {
             $frontendHost = parse_url($frontendUrl, PHP_URL_HOST);
             if ($frontendHost) {
