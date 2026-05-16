@@ -4,86 +4,25 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class Cors
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $origin = $request->headers->get('Origin');
-        $originHost = parse_url($origin, PHP_URL_HOST) ?? '';
 
-        // Debug logging
-        Log::debug('CORS Debug', [
-            'origin' => $origin,
-            'originHost' => $originHost,
-            'app_env' => env('APP_ENV'),
-            'sanctum_domains' => env('SANCTUM_STATEFUL_DOMAINS'),
-            'app_frontend_url' => env('APP_FRONTEND_URL'),
-        ]);
-
-        // Dominios permitidos locales
-        $localAllowed = [
-            'localhost',
-            '127.0.0.1',
-        ];
-
-        $localAllowedOrigins = [
+        $allowed = [
             'http://localhost:5173',
             'http://127.0.0.1:5173',
             'http://localhost:8000',
             'http://127.0.0.1:8000',
-            'http://localhost:3000',
-            'null',
+            'https://perfect-balance-production-d51c.up.railway.app',
+            'https://proyecto-web-production-07b3.up.railway.app',
         ];
 
-        // Dominios de producción desde SANCTUM_STATEFUL_DOMAINS (solo hosts)
-      // DESPUÉS
-$stateful = config('sanctum.stateful', []);
-if (is_string($stateful)) {
-    $stateful = explode(',', $stateful);
-}
-$productionDomains = array_filter(
-    array_map(fn($domain) => parse_url(trim($domain), PHP_URL_HOST) ?: trim($domain), $stateful)
-);
+        $allowOrigin = (in_array($origin, $allowed, true)) ? $origin : '';
 
-        // Incluir el host de APP_FRONTEND_URL
-        $frontendUrl = config('app.frontend_url');
-        if ($frontendUrl) {
-            $frontendHost = parse_url($frontendUrl, PHP_URL_HOST);
-            if ($frontendHost) {
-                $productionDomains[] = $frontendHost;
-            }
-        }
-
-        Log::debug('CORS Production Domains', [
-            'productionDomains' => $productionDomains,
-            'localAllowed' => $localAllowed,
-            'localAllowedOrigins' => $localAllowedOrigins,
-        ]);
-
-        // Verificar si el origen es local o está en la lista de dominios permitidos
-        $isAllowed = false;
-        if ($origin && in_array($origin, $localAllowedOrigins, true)) {
-            $isAllowed = true;
-        } elseif ($originHost && in_array($originHost, $localAllowed, true)) {
-            $isAllowed = true;
-        } elseif ($originHost && in_array($originHost, $productionDomains, true)) {
-            $isAllowed = true;
-        }
-
-        Log::debug('CORS Check Result', [
-            'isAllowed' => $isAllowed,
-            'allowOrigin' => ($isAllowed && $origin) ? $origin : 'NOT ALLOWED',
-        ]);
-
-        $allowOrigin = ($isAllowed && $origin) ? $origin : '';
-        
-        // Manejar preflight OPTIONS
         if ($request->isMethod('OPTIONS')) {
             return response('', 204)
                 ->header('Access-Control-Allow-Origin', $allowOrigin)
@@ -93,9 +32,8 @@ $productionDomains = array_filter(
                 ->header('Access-Control-Max-Age', '86400');
         }
 
-        // Procesar petición normal
         $response = $next($request);
-        
+
         return $response
             ->header('Access-Control-Allow-Origin', $allowOrigin)
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
