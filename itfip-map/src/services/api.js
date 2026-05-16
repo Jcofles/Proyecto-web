@@ -17,12 +17,14 @@ async function request(endpoint, options = {}) {
   const token = localStorage.getItem('auth_token')
   
   const config = {
+    method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
+    credentials: 'include',
     ...options,
   }
 

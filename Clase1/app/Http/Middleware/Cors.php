@@ -14,24 +14,41 @@ class Cors
     public function handle(Request $request, Closure $next): Response
     {
         $origin = $request->headers->get('Origin');
+        $originHost = parse_url($origin, PHP_URL_HOST) ?? '';
 
-        // Dominios permitidos locales y de producción según las variables de entorno.
-        $allowed = array_filter(array_merge([
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-            'http://localhost:8000',
-            'http://127.0.0.1:8000',
-            'http://localhost:3000',
+        // Dominios permitidos locales
+        $localAllowed = [
+            'localhost:5173',
+            '127.0.0.1:5173',
+            'localhost:8000',
+            '127.0.0.1:8000',
+            'localhost:3000',
             'null',
-        ], array_map('trim', explode(',', env('SANCTUM_STATEFUL_DOMAINS', '')))));
+        ];
 
+        // Dominios de producción desde SANCTUM_STATEFUL_DOMAINS (solo hosts)
+        $productionDomains = array_filter(
+            array_map('trim', explode(',', env('SANCTUM_STATEFUL_DOMAINS', '')))
+        );
+
+        // Incluir el host de APP_FRONTEND_URL
         $frontendUrl = env('APP_FRONTEND_URL');
         if ($frontendUrl) {
-            $allowed[] = rtrim($frontendUrl, '/');
+            $frontendHost = parse_url($frontendUrl, PHP_URL_HOST);
+            if ($frontendHost) {
+                $productionDomains[] = $frontendHost;
+            }
         }
 
-        $origin = $origin ? rtrim($origin, '/') : $origin;
-        $allowOrigin = ($origin && in_array($origin, $allowed, true)) ? $origin : '';
+        // Verificar si el origen es local o está en la lista de dominios permitidos
+        $isAllowed = false;
+        if (in_array($originHost, $localAllowed, true)) {
+            $isAllowed = true;
+        } elseif (in_array($originHost, $productionDomains, true)) {
+            $isAllowed = true;
+        }
+
+        $allowOrigin = ($isAllowed && $origin) ? $origin : '';
         
         // Manejar preflight OPTIONS
         if ($request->isMethod('OPTIONS')) {
