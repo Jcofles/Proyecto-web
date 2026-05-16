@@ -30,85 +30,89 @@ class RegisterController extends Controller
         $this->secureKeyService = $secureKeyService;
     }
 
-    public function register(Request $request)
-    {
-        Log::info('=== INICIO REGISTRO SIMPLE ===');
-        Log::info('Request data: ' . json_encode($request->all()));
-        
-        try {
-            // Validación manual simple
-            $validated = $request->validate([
-                'nombres' => 'required|string|max:191',
-                'apellidos' => 'required|string|max:191',
-                'email' => 'required|email|max:191',
-                'secure_email' => 'required|email|max:191|different:email',
-                'password' => 'required|string|min:8',
-                'password_confirmation' => 'required|string|same:password',
-            ]);
+   public function register(Request $request)
+{
+    Log::info('=== INICIO REGISTRO SIMPLE ===');
+    
+    try {
+        $validated = $request->validate([
+            'nombres' => 'required|string|max:191',
+            'apellidos' => 'required|string|max:191',
+            'email' => 'required|email|max:191',
+            'secure_email' => 'required|email|max:191|different:email',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|string|same:password',
+        ]);
 
-            // controlador de duplicados: pendientes y usuarios existentes
-            $existingPending = PendingUser::where('email', $validated['email'])->first();
-            if ($existingPending) {
-                if ($existingPending->email_verification_expires_at &&
-                    Carbon::now()->isAfter($existingPending->email_verification_expires_at)) {
-                    $existingPending->delete();
-                } else {
-                    return response()->json([
-                        'message' => 'El correo ya está pendiente de verificación.',
-                    ], 422);
-                }
-            }
-
-            if (User::where('email', $validated['email'])->exists()) {
+        $existingPending = PendingUser::where('email', $validated['email'])->first();
+        if ($existingPending) {
+            if ($existingPending->email_verification_expires_at &&
+                Carbon::now()->isAfter($existingPending->email_verification_expires_at)) {
+                $existingPending->delete();
+            } else {
                 return response()->json([
-                    'message' => 'El correo ya está registrado',
+                    'message' => 'El correo ya está pendiente de verificación.',
                 ], 422);
             }
-
-            // Guardar en tabla temporal pending_users
-            $token = Str::random(64);
-            
-            // Obtener el ID del status 'inactivo' para usuarios pendientes
-            $statusInactivo = DB::table('user_status')->where('nombre', 'inactivo')->value('id');
-            
-            $pending = PendingUser::create([
-                'nombres' => $validated['nombres'],
-                'apellidos' => $validated['apellidos'],
-                'email' => $validated['email'],
-                'secure_email' => $validated['secure_email'],
-                'password' => Hash::make($validated['password']),
-                'email_verification_token' => $token,
-                'email_verification_expires_at' => Carbon::now()->addHours(24),
-                'status_id' => $statusInactivo ?? 2,
-            ]);
-
-            // Enviar correo de confirmación al registro pendiente
-            try {
-                $this->emailService->sendVerification($pending, $token);
-                Log::info('Email de verificación enviado a: ' . $pending->email);
-            } catch (\Exception $e) {
-                Log::warning('No se pudo enviar email de verificación: ' . $e->getMessage());
-                // Continuar aunque falle el envío del email
-            }
-
-            Log::info('Usuario pendiente creado: ' . $pending->email);
-
-            return response()->json([
-                'message' => 'Usuario registrado. Verifica tu correo electrónico.',
-                'pending_id' => $pending->id,
-                'email' => $pending->email,
-            ], 201);
-
-        } catch (\Exception $e) {
-            Log::error('Error en registro: ' . $e->getMessage());
-            
-            return response()->json([
-                'message' => 'Error al registrar usuario',
-                'error' => app()->isLocal() ? $e->getMessage() : 'Error interno del servidor',
-            ], 500);
         }
-    }
 
+        if (User::where('email', $validated['email'])->exists()) {
+            return response()->json([
+                'message' => 'El correo ya está registrado',
+            ], 422);
+        }
+
+        $token = Str::random(64);
+        $statusInactivo = DB::table('user_status')->where('nombre', 'inactivo')->value('id');
+        
+        $pending = PendingUser::create([
+            'nombres' => $validated['nombres'],
+            'apellidos' => $validated['apellidos'],
+            'email' => $validated['email'],
+            'secure_email' => $validated['secure_email'],
+            'password' => Hash::make($validated['password']),
+            'email_verification_token' => $token,
+            'email_verification_expires_at' => Carbon::now()->addHours(24),
+            'status_id' => $statusInactivo ?? 2,
+        ]);
+
+        Log::info('Usuario pendiente creado: ' . $pending->email);
+
+        // Responder inmediatamente al frontend
+        $response = response()->json([
+            'message' => 'Usuario registrado. Verifica tu correo electrónico.',
+            'pending_id' => $pending->id,
+            'email' => $pending->email,
+        ], 201);
+
+        // Enviar email DESPUÉS de responder (evita timeout)
+        $emailService = $this->emailService;
+        $pendingId = $pending->id;
+        $pendingEmail = $pending->email;
+        
+        register_shutdown_function(function() use ($emailService, $pending, $token, $pendingEmail) {
+            try {
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                }
+                $emailService->sendVerification($pending, $token);
+                Log::info('Email enviado a: ' . $pendingEmail);
+            } catch (\Exception $e) {
+                Log::warning('Error enviando email: ' . $e->getMessage());
+            }
+        });
+
+        return $response;
+
+    } catch (\Exception $e) {
+        Log::error('Error en registro: ' . $e->getMessage());
+        
+        return response()->json([
+            'message' => 'Error al registrar usuario',
+            'error' => app()->isLocal() ? $e->getMessage() : 'Error interno del servidor',
+        ], 500);
+    }
+}
     /**
      * Confirmar email del usuario
      */
