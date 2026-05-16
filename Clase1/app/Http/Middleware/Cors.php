@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class Cors
@@ -17,7 +18,7 @@ class Cors
         $originHost = parse_url($origin, PHP_URL_HOST) ?? '';
 
         // Debug logging
-        \Log::debug('CORS Debug', [
+        Log::debug('CORS Debug', [
             'origin' => $origin,
             'originHost' => $originHost,
             'app_env' => env('APP_ENV'),
@@ -49,7 +50,7 @@ class Cors
             }
         }
 
-        \Log::debug('CORS Production Domains', [
+        Log::debug('CORS Production Domains', [
             'productionDomains' => $productionDomains,
             'localAllowed' => $localAllowed,
         ]);
@@ -62,7 +63,7 @@ class Cors
             $isAllowed = true;
         }
 
-        \Log::debug('CORS Check Result', [
+        Log::debug('CORS Check Result', [
             'isAllowed' => $isAllowed,
             'allowOrigin' => ($isAllowed && $origin) ? $origin : 'NOT ALLOWED',
         ]);
