@@ -28,17 +28,22 @@ class Cors
 
         // Dominios permitidos locales
         $localAllowed = [
-            'localhost:5173',
-            '127.0.0.1:5173',
-            'localhost:8000',
-            '127.0.0.1:8000',
-            'localhost:3000',
+            'localhost',
+            '127.0.0.1',
+        ];
+
+        $localAllowedOrigins = [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+            'http://localhost:3000',
             'null',
         ];
 
         // Dominios de producción desde SANCTUM_STATEFUL_DOMAINS (solo hosts)
         $productionDomains = array_filter(
-            array_map('trim', explode(',', env('SANCTUM_STATEFUL_DOMAINS', '')))
+            array_map(fn($domain) => parse_url(trim($domain), PHP_URL_HOST) ?: trim($domain), explode(',', env('SANCTUM_STATEFUL_DOMAINS', '')))
         );
 
         // Incluir el host de APP_FRONTEND_URL
@@ -53,13 +58,16 @@ class Cors
         Log::debug('CORS Production Domains', [
             'productionDomains' => $productionDomains,
             'localAllowed' => $localAllowed,
+            'localAllowedOrigins' => $localAllowedOrigins,
         ]);
 
         // Verificar si el origen es local o está en la lista de dominios permitidos
         $isAllowed = false;
-        if (in_array($originHost, $localAllowed, true)) {
+        if ($origin && in_array($origin, $localAllowedOrigins, true)) {
             $isAllowed = true;
-        } elseif (in_array($originHost, $productionDomains, true)) {
+        } elseif ($originHost && in_array($originHost, $localAllowed, true)) {
+            $isAllowed = true;
+        } elseif ($originHost && in_array($originHost, $productionDomains, true)) {
             $isAllowed = true;
         }
 

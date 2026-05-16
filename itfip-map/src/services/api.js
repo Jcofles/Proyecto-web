@@ -24,7 +24,6 @@ async function request(endpoint, options = {}) {
       ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
-    credentials: 'include',
     ...options,
   }
 
