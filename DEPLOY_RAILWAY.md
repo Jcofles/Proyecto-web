@@ -40,8 +40,11 @@ Ejemplo de variables mínimas que debes añadir en Railway (usa los valores real
 - `APP_KEY` = base64:...
 - `APP_URL` = https://<tu-backend>.up.railway.app
 - `APP_FRONTEND_URL` = https://<tu-frontend>.up.railway.app
+- `SESSION_DOMAIN` = .up.railway.app
+- `SANCTUM_STATEFUL_DOMAINS` = <tu-frontend>.up.railway.app
 - `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
 - `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`
+- `VITE_API_URL` = https://<tu-backend>.up.railway.app/api
 
 Release command (en Railway):
 - Usa: `php artisan migrate --force` para ejecutar migraciones automáticas después del deploy. También incluí `release: php artisan migrate --force` en `Clase1/Procfile`.

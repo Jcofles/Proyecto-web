@@ -2,7 +2,12 @@
  * Servicio de API para conexión con backend Laravel
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL_DEFAULT = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL_FALLBACK = 'https://proyecto-web-production-07b3.up.railway.app/api'
+const API_BASE_URL = (API_BASE_URL_DEFAULT.includes('localhost') || API_BASE_URL_DEFAULT.includes('127.0.0.1'))
+  && !['localhost', '127.0.0.1'].includes(window.location.hostname)
+  ? API_BASE_URL_FALLBACK
+  : API_BASE_URL_DEFAULT
 
 /**
  * Realizar una petición HTTP

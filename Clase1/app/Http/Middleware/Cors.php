@@ -14,23 +14,24 @@ class Cors
     public function handle(Request $request, Closure $next): Response
     {
         $origin = $request->headers->get('Origin');
-        
-        // Dominios permitidos locales
-        $allowed = [
+
+        // Dominios permitidos locales y de producción según las variables de entorno.
+        $allowed = array_filter(array_merge([
             'http://localhost:5173',
             'http://127.0.0.1:5173',
             'http://localhost:8000',
             'http://127.0.0.1:8000',
             'http://localhost:3000',
             'null',
-            'https://perfect-balance-production-d51c.up.railway.app',
-        ];
-        
-        $host = parse_url($origin, PHP_URL_HOST) ?? '';
-        $isLocalhost = in_array($origin, $allowed) || str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
+        ], array_map('trim', explode(',', env('SANCTUM_STATEFUL_DOMAINS', '')))));
 
-        // Permitir únicamente orígenes locales o los listados en $allowed.
-        $allowOrigin = ($origin && (in_array($origin, $allowed))) ? $origin : '';
+        $frontendUrl = env('APP_FRONTEND_URL');
+        if ($frontendUrl) {
+            $allowed[] = rtrim($frontendUrl, '/');
+        }
+
+        $origin = $origin ? rtrim($origin, '/') : $origin;
+        $allowOrigin = ($origin && in_array($origin, $allowed, true)) ? $origin : '';
         
         // Manejar preflight OPTIONS
         if ($request->isMethod('OPTIONS')) {
