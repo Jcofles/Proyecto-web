@@ -16,13 +16,7 @@ Pasos mínimos para desplegar el backend Laravel y el frontend en Railway:
      - Start: deja la detección de Railway o usa `php artisan serve --host=0.0.0.0 --port=$PORT`
 
 Nota: He añadido un `Procfile` en el folder `Clase1/` con un `web` command y un `release` command para migraciones automáticas.
-
-
-4. Base de datos
-   - Provisiona una base de datos en Railway (MySQL/Postgres) y coloca las credenciales en las variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`.
-   - Ejecuta migraciones desde la interfaz de Railway o mediante un release command: `php artisan migrate --force`.
-
-5. Frontend (itfip-map)
+Si Railway no usa la carpeta `Clase1` como root, también creé un `Procfile` en la raíz del proyecto que ejecuta `cd Clase1 && php artisan serve ...`.
    - Puedes desplegar el frontend como un servicio separado (Node) en Railway o servirlo como contenido estático.
    - Establece `VITE_API_URL` a la URL pública del backend (`https://<tu-backend>.up.railway.app/api`).
 
