@@ -23,13 +23,14 @@ class Cors
             'http://127.0.0.1:8000',
             'http://localhost:3000',
             'null',
+            'https://perfect-balance-production-d51c.up.railway.app',
         ];
         
         $host = parse_url($origin, PHP_URL_HOST) ?? '';
         $isLocalhost = in_array($origin, $allowed) || str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
 
         // Permitir únicamente orígenes locales o los listados en $allowed.
-        $allowOrigin = ($origin && $isLocalhost) ? $origin : '*';
+        $allowOrigin = ($origin && (in_array($origin, $allowed))) ? $origin : '';
         
         // Manejar preflight OPTIONS
         if ($request->isMethod('OPTIONS')) {
