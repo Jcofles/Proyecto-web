@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\LoginController;
 use App\Http\Controllers\Api\SecureKeyController;
 use App\Http\Controllers\Api\TwoFactorController;
+use App\Http\Controllers\Api\RoutingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,8 +52,28 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Nodos
 Route::get('nodos', [NodoController::class, 'index']);
+Route::get('nodos/buscar', [NodoController::class, 'buscar']);
+Route::post('nodos/mas-cercano', [NodoController::class, 'masCercano']);
+Route::get('nodos/ruta/{origen}/{destino}', [NodoController::class, 'ruta']);
+Route::get('conexiones', [NodoController::class, 'conexiones']);
 Route::post('nodos', [NodoController::class, 'store']);
 Route::post('nodos/conectar', [NodoController::class, 'conectar']);
+
+// Ruteo de Rutas - Cálculo de trazados y búsqueda de caminos
+Route::prefix('routing')->group(function () {
+    // Búsqueda de rutas
+    Route::get('route/{origenId}/{destinoId}', [RoutingController::class, 'getRoute']);
+    Route::post('multi-route', [RoutingController::class, 'getMultiRoute']);
+    
+    // Información de nodos
+    Route::get('nodes', [RoutingController::class, 'getNodos']);
+    Route::get('nodes/{id}', [RoutingController::class, 'getNodo']);
+    Route::get('search', [RoutingController::class, 'searchNodos']);
+    
+    // Herramientas y estadísticas
+    Route::get('stats', [RoutingController::class, 'getStats']);
+    Route::post('distance', [RoutingController::class, 'calculateDistance']);
+});
 
 // Catálogos
 Route::get('nodo-tipos', function() {
