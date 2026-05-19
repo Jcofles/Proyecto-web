@@ -6,7 +6,7 @@
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0;">ITFIP Maps</h1>
+        <h1 style="color: white; margin: 0;">UniMaps</h1>
     </div>
     
     <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -14,7 +14,7 @@
         
         <p>Hola <strong>{{ $userName }}</strong>,</p>
         
-        <p>Te confirmamos que tu cuenta en <strong>ITFIP Maps</strong> ha sido eliminada exitosamente.</p>
+        <p>Te confirmamos que tu cuenta en <strong>UniMaps</strong> ha sido eliminada exitosamente.</p>
         
         <div style="background: white; padding: 20px; border-left: 4px solid #667eea; margin: 20px 0;">
             <p style="margin: 0;"><strong>Correo:</strong> {{ $userEmail }}</p>
@@ -37,7 +37,7 @@
         
         <p style="margin-top: 30px; color: #666; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px;">
             Este es un correo automático, por favor no respondas a este mensaje.<br>
-            <strong>ITFIP Maps</strong> - Sistema de Mapeo Digital
+            <strong>UniMaps</strong> - Sistema de Mapeo Digital
         </p>
     </div>
 </body>

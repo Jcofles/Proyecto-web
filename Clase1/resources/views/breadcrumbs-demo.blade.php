@@ -40,7 +40,7 @@
     
     <div class="bg-white dark:bg-[#161615] rounded-lg p-6 shadow-sm border border-[#e3e3e0] dark:border-[#3E3E3A]">
         <h1 class="text-2xl font-bold text-[#1b1b18] dark:text-[#EDEDEC] mb-4">
-            Ejemplos de Breadcrumbs para ITFIP Maps
+            Ejemplos de Breadcrumbs para UniMaps
         </h1>
         
         <div class="space-y-4 text-[#706f6c] dark:text-[#A1A09A]">

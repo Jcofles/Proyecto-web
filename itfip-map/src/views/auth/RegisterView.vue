@@ -62,7 +62,7 @@
             <div class="sc-glow"></div>
           </div>
           <h2 class="sc-h">¡Registro exitoso!</h2>
-          <p class="sc-p">Bienvenido a <em>ITFIP Maps</em>.<br>Tu cuenta fue creada correctamente.</p>
+          <p class="sc-p">Bienvenido a <em>UniMaps</em>.<br>Tu cuenta fue creada correctamente.</p>
           <div class="sc-coords"><span>LAT 3.8654°N</span><span>·</span><span>LON 75.3328°W</span></div>
           <div class="sc-prog"><div class="sc-fill"></div></div>
           <p class="sc-sub">Redirigiendo…</p>
@@ -93,7 +93,7 @@
           </div>
           <span class="logo-ping"/>
         </div>
-        <h1 class="brand">ITFIP<em>MAPS</em></h1>
+        <h1 class="brand">Uni<em>Maps</em></h1>
         <p class="tagline">SISTEMA DE LOCALIZACIÓN DE CAMPUS</p>
         <div class="chips">
           <span class="chip"><span class="cdot blue"/>CAMPUS ITFIP</span>

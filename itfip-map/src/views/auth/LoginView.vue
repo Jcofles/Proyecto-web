@@ -71,7 +71,7 @@
           </div>
           <span class="logo-ping"/>
         </div>
-        <h1 class="brand">ITFIP<em>MAPS</em></h1>
+        <h1 class="brand">Uni<em>Maps</em></h1>
         <p class="tagline">SISTEMA DE LOCALIZACIÓN DE CAMPUS</p>
         <div class="chips">
           <span class="chip"><span class="cdot blue"/>CAMPUS ITFIP</span>

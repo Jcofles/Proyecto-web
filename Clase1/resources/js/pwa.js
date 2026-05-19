@@ -184,7 +184,7 @@ function showInstallPrompt() {
         </style>
         
         <div class="pwa-icon">🗺️</div>
-        <h2 class="pwa-title">¡Instala ITFIP Maps!</h2>
+        <h2 class="pwa-title">¡Instala UniMaps!</h2>
         <p class="pwa-subtitle">Obtén la mejor experiencia de navegación en el campus</p>
         
         <div class="pwa-benefits">
@@ -255,7 +255,7 @@ window.addEventListener('appinstalled', () => {
         box-shadow: 0 10px 40px rgba(0, 255, 136, 0.5);
         animation: slideDown 0.5s ease;
     `;
-    successMsg.textContent = '✅ ¡ITFIP Maps instalado correctamente!';
+    successMsg.textContent = '✅ ¡UniMaps instalado correctamente!';
     document.body.appendChild(successMsg);
     
     setTimeout(() => {

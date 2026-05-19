@@ -6,7 +6,7 @@
         <div class="logo-section">
           <i class="pi pi-map-marker" style="font-size: 2rem; color: var(--primary)"></i>
           <div>
-            <h1>ITFIP Maps</h1>
+            <h1>UniMaps</h1>
             <span class="subtitle">Sistema de Navegación Campus</span>
           </div>
         </div>

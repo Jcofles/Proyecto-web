@@ -101,7 +101,7 @@ function showInstallPrompt() {
     
     modal.innerHTML = `
         <div style="font-size: 60px; margin-bottom: 20px;">🗺️</div>
-        <h2 style="color: #00ff88; font-size: 24px; margin: 0 0 10px 0;">¡Instala ITFIP Maps!</h2>
+        <h2 style="color: #00ff88; font-size: 24px; margin: 0 0 10px 0;">¡Instala UniMaps!</h2>
         <p style="color: #7dd3fc; font-size: 14px; margin: 0 0 20px 0;">Obtén la mejor experiencia de navegación</p>
         <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; padding: 15px; margin: 20px 0; text-align: left;">
             <div style="color: #e8f4fd; font-size: 13px; margin: 8px 0;">✓ Acceso rápido</div>

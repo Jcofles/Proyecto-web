@@ -3,8 +3,9 @@ const CACHE_NAME = 'unimaps-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
-  '/icon-192x192.svg',
-  '/icon-512x512.svg'
+  '/icon-192x192.png',
+  '/icon-512x512.png',
+  '/favicon.ico'
 ];
 
 // Evento de instalación
