@@ -10,14 +10,14 @@ export function useCompass() {
   const isCalibrating = ref(false)
   
   // Filtro de Kalman para giroscopio
-  const kalmanHeading = new KalmanFilter(0.0015, 0.7, 0.6)
+  const kalmanHeading = new KalmanFilter(0.0025, 0.85, 0.8)
   let isInitialized = false
   let lastHeading = null
   let calibrationOffset = 0
   
   // Buffer para promediar lecturas (más estabilidad)
   const headingBuffer = []
-  const BUFFER_SIZE = 7
+  const BUFFER_SIZE = 10
   
   // Suavizado adicional para transiciones 0°-360°
   const normalizeHeading = (angle) => {
@@ -93,7 +93,7 @@ export function useCompass() {
     lastHeading = rawHeading
     
     // Ignorar lecturas muy inestables
-    if (accuracy.value !== null && accuracy.value > 35) {
+    if (accuracy.value !== null && accuracy.value > 60) {
       console.log('⚠️ Lectura de brújula rechazada por baja precisión:', accuracy.value)
       return
     }

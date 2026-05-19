@@ -125,6 +125,36 @@ const clearRoute = () => {
   }
 };
 
+const getUserMarkerHeading = () => {
+  if (compassEnabled.value && compassHeading.value !== null && compassHeading.value !== undefined) {
+    return compassHeading.value;
+  }
+  if (movementHeading.value !== null && movementHeading.value !== undefined) {
+    return movementHeading.value;
+  }
+  return 0;
+};
+
+const createUserMarkerIcon = (rotation = 0) => {
+  return L.divIcon({
+    className: 'custom-div-icon',
+    html: `
+      <div style="position: relative; width: 44px; height: 44px; transform: rotate(${rotation}deg);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(66, 133, 244, 0.15); border-radius: 50%; border: 1px solid rgba(66, 133, 244, 0.3);"></div>
+        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid rgba(66, 133, 244, 0.7); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));"></div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; background: #4285f4; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);"></div>
+      </div>
+    `,
+    iconSize: [44, 44],
+    iconAnchor: [22, 22]
+  });
+};
+
+const refreshUserMarkerIcon = (rotation = 0) => {
+  if (!marcadorUsuario.value) return;
+  marcadorUsuario.value.setIcon(createUserMarkerIcon(rotation));
+};
+
 const cancelMarkerAnimation = () => {
   if (markerAnimation.value) {
     cancelAnimationFrame(markerAnimation.value);
@@ -532,10 +562,14 @@ watch(userLocation, (newLocation) => {
     const distance = currentPos.distanceTo(targetLatLng);
 
     cancelMarkerAnimation();
-    if (isSimulando.value || distance < 0.8) {
+    if (isSimulando.value || distance < 0.6) {
+      marcadorUsuario.value.setLatLng(targetLatLng);
+    } else if (distance > 18) {
+      // Saltos grandes deben posicionarse inmediatamente para no arrastrar demasiado
       marcadorUsuario.value.setLatLng(targetLatLng);
     } else {
-      animateUserMarkerTo(targetLatLng, 420);
+      const duration = Math.min(260, Math.max(120, Math.round(distance * 18)));
+      animateUserMarkerTo(targetLatLng, duration);
     }
 
     console.log('📍 Ubicación actualizada:', newLocation.lat, newLocation.lng, 'dist:', Math.round(distance));
@@ -615,23 +649,9 @@ onMounted(async () => {
   const initialLng = userLocation.value?.lng || -74.8972928;
   console.log('📍 Ubicación inicial:', initialLat, initialLng);
 
-  marcadorUsuario.value = L.marker([initialLat, initialLng], { 
+  marcadorUsuario.value = L.marker([initialLat, initialLng], {
     draggable: false,
-    icon: L.divIcon({
-      className: 'custom-div-icon',
-      html: `
-        <div style="position: relative; width: 44px; height: 44px;">
-          <!-- Círculo de precisión -->
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(66, 133, 244, 0.15); border-radius: 50%; border: 1px solid rgba(66, 133, 244, 0.3);"></div>
-          <!-- Cono de dirección -->
-          <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid rgba(66, 133, 244, 0.7); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));"></div>
-          <!-- Punto azul central -->
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; background: #4285f4; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);"></div>
-        </div>
-      `,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
-    })
+    icon: createUserMarkerIcon(getUserMarkerHeading())
   }).addTo(map.value);
   console.log('✅ Marcador de usuario agregado (NO arrastrable)');
 
@@ -649,31 +669,14 @@ watch(night, () => {
   updateMapTheme();
 });
 
-// Watch para rotar el marcador según la BRÚJULA del dispositivo
-watch(compassHeading, (newHeading) => {
-  if (marcadorUsuario.value && newHeading !== null && newHeading !== undefined && compassEnabled.value) {
-    // Usar el heading directamente (ya está corregido en el composable)
-    const iconHtml = `
-      <div style="position: relative; width: 44px; height: 44px; transform: rotate(${newHeading}deg);">
-        <!-- Círculo de precisión -->
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(66, 133, 244, 0.15); border-radius: 50%; border: 1px solid rgba(66, 133, 244, 0.3);"></div>
-        <!-- Cono de dirección -->
-        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 20px solid rgba(66, 133, 244, 0.7); filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));"></div>
-        <!-- Punto azul central -->
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 16px; height: 16px; background: #4285f4; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);"></div>
-      </div>
-    `;
-    
-    const icon = L.divIcon({
-      className: 'custom-div-icon',
-      html: iconHtml,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
-    });
-    
-    marcadorUsuario.value.setIcon(icon);
-  }
-}, { immediate: true });
+// Watch para rotar el marcador según la BRÚJULA o el movimiento real
+const updateMarkerRotation = () => {
+  if (!marcadorUsuario.value) return;
+  const heading = getUserMarkerHeading();
+  refreshUserMarkerIcon(heading);
+};
+
+watch([compassHeading, movementHeading, compassEnabled], updateMarkerRotation, { immediate: true });
 
 const centerOnUser = () => {
   if (marcadorUsuario.value && map.value) {

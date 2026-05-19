@@ -14,12 +14,12 @@ export function useGeolocation() {
   const watchId = ref(null)
   
   // Filtros de Kalman AGRESIVOS para lat/lng (CRÍTICO)
-  const kalman2D = new KalmanFilter2D(0.0004, 3, 0.8)
-  const MAX_ACCURACY = 90
+  const kalman2D = new KalmanFilter2D(0.0018, 2.5, 0.7)
+  const MAX_ACCURACY = 100
   
   // Buffer para promediar lecturas GPS
   const locationBuffer = []
-  const BUFFER_SIZE = 4
+  const BUFFER_SIZE = 2
 
   // Calcular distancia entre dos puntos (fórmula Haversine)
   function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -79,14 +79,14 @@ export function useGeolocation() {
     
     console.log('📍 GPS Raw:', rawLat.toFixed(7), rawLng.toFixed(7), 'Accuracy:', accuracy.toFixed(1) + 'm')
     
-    // Rechazar lecturas con precisión demasiado baja
+    // Rechazar lecturas con precisión muy baja
     if (accuracy > MAX_ACCURACY) {
       console.log('⚠️ Lectura rechazada por precisión muy baja:', accuracy)
       return
     }
     
     // Agregar al buffer
-    locationBuffer.push({ lat: rawLat, lng: rawLng })
+    locationBuffer.push({ lat: rawLat, lng: rawLng, accuracy })
     if (locationBuffer.length > BUFFER_SIZE) {
       locationBuffer.shift()
     }
