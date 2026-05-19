@@ -1,5 +1,5 @@
-// Service Worker para ITFIP Maps PWA
-const CACHE_NAME = 'itfip-maps-v1';
+// Service Worker para UniMaps PWA
+const CACHE_NAME = 'unimaps-v2';
 const urlsToCache = [
   '/',
   '/manifest.json'
@@ -63,4 +63,12 @@ self.addEventListener('fetch', (event) => {
         return caches.match(event.request);
       })
   );
+});
+
+// Escuchar mensajes desde la página para forzar activación inmediata
+self.addEventListener('message', (event) => {
+  if (!event.data) return;
+  if (event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

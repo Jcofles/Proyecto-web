@@ -34,6 +34,21 @@ if ('serviceWorker' in navigator) {
                 console.log('✓ Service Worker registrado:', registration.scope);
                 console.log('✓ Estado:', registration.active ? 'Activo' : 'Instalando...');
                 registration.update();
+                    // Detectar nuevas versiones del SW
+                    if (registration.waiting) {
+                        // SW ya instalado y en espera — notificar actualización
+                        showUpdateAvailable(registration);
+                    }
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && registration.waiting) {
+                                    showUpdateAvailable(registration);
+                                }
+                            });
+                        }
+                    });
             })
             .catch(error => {
                 console.error('✗ Error al registrar Service Worker:', error);
@@ -119,3 +134,62 @@ window.addEventListener('appinstalled', () => {
     console.log('✅ PWA instalada exitosamente');
     console.log('💡 Usa el botón 🔐 en el mapa para dar permisos');
 });
+
+// Mostrar UI para actualizar la PWA cuando hay un SW en `waiting`
+function showUpdateAvailable(registration) {
+    // Evitar duplicados
+    if (document.getElementById('pwa-update-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pwa-update-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        z-index: 99999;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        pointer-events: auto;
+        background: linear-gradient(135deg,#08121f,#051018);
+        color: #e6fffb;
+        border: 1px solid rgba(0,255,136,0.15);
+        padding: 14px 18px;
+        border-radius: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        max-width: 720px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    `;
+
+    card.innerHTML = `
+        <div style="flex:1">Nueva versión disponible. ¿Deseas actualizar para aplicar los cambios?</div>
+        <div style="display:flex; gap:8px">
+            <button id="pwa-update-later" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:#9fe9d6;padding:8px 12px;border-radius:8px;">Más tarde</button>
+            <button id="pwa-update-now" style="background:linear-gradient(90deg,#00ff88,#00bfff);border:none;color:#000;padding:8px 12px;border-radius:8px;font-weight:700;">Actualizar</button>
+        </div>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    document.getElementById('pwa-update-later').addEventListener('click', () => {
+        overlay.remove();
+    });
+
+    document.getElementById('pwa-update-now').addEventListener('click', async () => {
+        if (!registration || !registration.waiting) return;
+        // Enviar mensaje al SW para que ejecute skipWaiting
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        // Cuando el nuevo SW tome control, recargar la página
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload(true);
+        });
+    });
+}
