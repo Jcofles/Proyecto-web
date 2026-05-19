@@ -49,9 +49,9 @@ const distanciaFormateada = computed(() => {
 });
 
 const DESTINO_PRESETS = [
-  { key: 'Entrada Principal', label: 'Entrada Universidad' },
-  { key: 'Entrada Bloque 2', label: 'Bloque D' },
-  { key: 'Entrada Cafetería', label: 'Cafetería' }
+  { keys: ['Entrada Principal', 'Entrada'], label: 'Entrada Universidad' },
+  { keys: ['Entrada Bloque 2', 'Bloque D', 'Bloque 2', 'Bloque'], label: 'Bloque D' },
+  { keys: ['Entrada Cafetería', 'Cafetería'], label: 'Cafetería' }
 ];
 const MAPPED_ZONE_RADIUS = 35;
 const searchQuery = ref('');
@@ -60,9 +60,9 @@ const mappedZoneError = ref('');
 
 const destinosPermitidos = computed(() => {
   return nodos.value
-    .filter(n => DESTINO_PRESETS.some(p => n.nombre.toLowerCase().includes(p.key.toLowerCase())))
+    .filter(n => DESTINO_PRESETS.some(p => (p.keys || []).some(k => n.nombre.toLowerCase().includes(k.toLowerCase()))))
     .map(n => {
-      const preset = DESTINO_PRESETS.find(p => n.nombre.toLowerCase().includes(p.key.toLowerCase()));
+      const preset = DESTINO_PRESETS.find(p => (p.keys || []).some(k => n.nombre.toLowerCase().includes(k.toLowerCase())));
       return {
         id: n.id,
         label: preset ? preset.label : n.nombre,

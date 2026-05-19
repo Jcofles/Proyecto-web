@@ -13,6 +13,10 @@ class NodoSeeder extends Seeder
      */
     public function run(): void
     {
+        if (DB::table('nodos')->count() > 0) {
+            return;
+        }
+
         // Limpiar tablas (se eliminan conexiones por cascada al borrar nodos)
         DB::table('conexiones')->delete();
         DB::table('nodos')->delete();

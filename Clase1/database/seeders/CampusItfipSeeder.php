@@ -9,6 +9,10 @@ class CampusItfipSeeder extends Seeder
 {
     public function run(): void
     {
+        if (DB::table('nodos')->count() > 0) {
+            return;
+        }
+
         // Limpiar tablas
         DB::table('conexiones')->delete();
         DB::table('nodos')->delete();
