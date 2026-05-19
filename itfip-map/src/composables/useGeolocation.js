@@ -1,5 +1,5 @@
 import { ref, onMounted, onUnmounted } from 'vue'
-import { KalmanFilter } from '@/utils/kalmanFilter'
+import { KalmanFilter2D } from '@/utils/kalmanFilter'
 
 const ITFIP_CENTER = { lat: 4.1555, lng: -74.8967 }
 const CAMPUS_RADIUS = 500
@@ -14,13 +14,12 @@ export function useGeolocation() {
   const watchId = ref(null)
   
   // Filtros de Kalman AGRESIVOS para lat/lng (CRÍTICO)
-  const kalmanLat = new KalmanFilter(0.0005, 0.3, 0.5)
-  const kalmanLng = new KalmanFilter(0.0005, 0.3, 0.5)
-  const MIN_ACCURACY = 50 // Más estricto
+  const kalman2D = new KalmanFilter2D(0.0004, 3, 0.8)
+  const MAX_ACCURACY = 90
   
   // Buffer para promediar lecturas GPS
   const locationBuffer = []
-  const BUFFER_SIZE = 3
+  const BUFFER_SIZE = 4
 
   // Calcular distancia entre dos puntos (fórmula Haversine)
   function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -80,9 +79,9 @@ export function useGeolocation() {
     
     console.log('📍 GPS Raw:', rawLat.toFixed(7), rawLng.toFixed(7), 'Accuracy:', accuracy.toFixed(1) + 'm')
     
-    // Rechazar lecturas con baja precisión
-    if (accuracy > MIN_ACCURACY) {
-      console.log('⚠️ Lectura rechazada por baja precisión')
+    // Rechazar lecturas con precisión demasiado baja
+    if (accuracy > MAX_ACCURACY) {
+      console.log('⚠️ Lectura rechazada por precisión muy baja:', accuracy)
       return
     }
     
@@ -97,39 +96,37 @@ export function useGeolocation() {
     if (!avgLocation) return
     
     // Aplicar Filtro de Kalman AGRESIVO (suavizado profesional)
-    const filteredLat = kalmanLat.filter(avgLocation.lat)
-    const filteredLng = kalmanLng.filter(avgLocation.lng)
+    const filtered = kalman2D.filter(avgLocation.lat, avgLocation.lng)
     
-    console.log('✅ GPS Filtrado:', filteredLat.toFixed(7), filteredLng.toFixed(7))
+    console.log('✅ GPS Filtrado:', filtered.lat.toFixed(7), filtered.lng.toFixed(7))
     
     // Calcular dirección de movimiento
     if (previousLocation.value) {
       const distance = calculateDistance(
         previousLocation.value.lat,
         previousLocation.value.lng,
-        filteredLat,
-        filteredLng
+        filtered.lat,
+        filtered.lng
       )
       
-      // Solo actualizar dirección si hay movimiento significativo (> 1m)
-      if (distance > 1) {
+      // Solo actualizar dirección si hay movimiento significativo (> 0.5m)
+      if (distance > 0.5) {
         movementHeading.value = calculateBearing(
           previousLocation.value.lat,
           previousLocation.value.lng,
-          filteredLat,
-          filteredLng
+          filtered.lat,
+          filtered.lng
         )
         console.log('🧭 Dirección de movimiento:', movementHeading.value.toFixed(1) + '°')
-        previousLocation.value = { lat: filteredLat, lng: filteredLng }
+        previousLocation.value = { lat: filtered.lat, lng: filtered.lng }
       }
     } else {
-      kalmanLat.reset(rawLat)
-      kalmanLng.reset(rawLng)
-      previousLocation.value = { lat: filteredLat, lng: filteredLng }
+      kalman2D.reset(rawLat, rawLng)
+      previousLocation.value = { lat: filtered.lat, lng: filtered.lng }
     }
     
-    userLocation.value = { lat: filteredLat, lng: filteredLng }
-    isInsideCampus.value = true
+    userLocation.value = { lat: filtered.lat, lng: filtered.lng }
+    isInsideCampus.value = checkIfInsideCampus(filteredLat, filteredLng)
     isLoading.value = false
     error.value = null
   }

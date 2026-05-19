@@ -38,9 +38,9 @@ export class KalmanFilter {
  * Filtro de Kalman 2D para coordenadas GPS
  */
 export class KalmanFilter2D {
-  constructor() {
-    this.latFilter = new KalmanFilter(0.001, 4, 1)
-    this.lngFilter = new KalmanFilter(0.001, 4, 1)
+  constructor(processNoise = 0.0005, measurementNoise = 3, estimationError = 1) {
+    this.latFilter = new KalmanFilter(processNoise, measurementNoise, estimationError)
+    this.lngFilter = new KalmanFilter(processNoise, measurementNoise, estimationError)
   }
 
   filter(lat, lng) {
@@ -50,8 +50,8 @@ export class KalmanFilter2D {
     }
   }
 
-  reset() {
-    this.latFilter.reset()
-    this.lngFilter.reset()
+  reset(lat = null, lng = null) {
+    this.latFilter.reset(lat)
+    this.lngFilter.reset(lng)
   }
 }

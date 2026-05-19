@@ -9,15 +9,15 @@ export function useCompass() {
   const isActive = ref(false)
   const isCalibrating = ref(false)
   
-  // Filtro de Kalman AGRESIVO para giroscopio
-  const kalmanHeading = new KalmanFilter(0.001, 0.3, 0.5)
+  // Filtro de Kalman para giroscopio
+  const kalmanHeading = new KalmanFilter(0.0015, 0.7, 0.6)
   let isInitialized = false
   let lastHeading = null
   let calibrationOffset = 0
   
   // Buffer para promediar lecturas (más estabilidad)
   const headingBuffer = []
-  const BUFFER_SIZE = 5
+  const BUFFER_SIZE = 7
   
   // Suavizado adicional para transiciones 0°-360°
   const normalizeHeading = (angle) => {
@@ -69,18 +69,15 @@ export function useCompass() {
       rawHeading = event.webkitCompassHeading
       accuracy.value = event.webkitCompassAccuracy
       useAbsolute = true
-      console.log('📱 iOS Compass:', rawHeading.toFixed(1) + '°')
+      console.log('📱 iOS Compass:', rawHeading.toFixed(1) + '°', 'Acc:', accuracy.value)
     }
-    // Android con orientación absoluta (mejor que alpha simple)
-    else if (event.absolute && event.alpha !== null) {
-      // CORRECCIÓN CRÍTICA: Android alpha va de 0 a 360
-      // 0° = Norte, 90° = Este, 180° = Sur, 270° = Oeste
-      // Pero el eje Z está invertido, necesitamos invertir
+    // Android con orientación absoluta
+    else if (event.absolute === true && event.alpha !== null) {
       rawHeading = 360 - event.alpha
       useAbsolute = true
       console.log('🤖 Android Absolute:', event.alpha.toFixed(1) + '° → Corregido:', rawHeading.toFixed(1) + '°')
     }
-    // Fallback: orientación relativa
+    // Fallback: orientación relativa (ajustada con offset de calibración)
     else if (event.alpha !== null) {
       rawHeading = 360 - event.alpha + calibrationOffset
       console.log('🔄 Relative:', event.alpha.toFixed(1) + '° → Corregido:', rawHeading.toFixed(1) + '°')
@@ -95,16 +92,21 @@ export function useCompass() {
     rawHeading = smoothHeadingTransition(rawHeading, lastHeading)
     lastHeading = rawHeading
     
+    // Ignorar lecturas muy inestables
+    if (accuracy.value !== null && accuracy.value > 35) {
+      console.log('⚠️ Lectura de brújula rechazada por baja precisión:', accuracy.value)
+      return
+    }
+    
     // Agregar al buffer
     headingBuffer.push(rawHeading)
     if (headingBuffer.length > BUFFER_SIZE) {
       headingBuffer.shift()
     }
     
-    // Obtener promedio del buffer
     const avgHeading = getAverageHeading(headingBuffer)
     
-    // Aplicar Filtro de Kalman AGRESIVO
+    // Aplicar filtro Kalman al heading
     if (!isInitialized) {
       kalmanHeading.reset(avgHeading)
       isInitialized = true
@@ -113,6 +115,8 @@ export function useCompass() {
       const filtered = kalmanHeading.filter(avgHeading)
       heading.value = normalizeHeading(filtered)
     }
+    
+    console.log('🧭 Heading final filtrado:', heading.value.toFixed(1) + '°')
     
     console.log('🧭 Heading Final:', heading.value.toFixed(1) + '°')
   }

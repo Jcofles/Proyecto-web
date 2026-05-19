@@ -65,6 +65,8 @@ Si quieres, puedo:
 
 7. Tareas finales
    - `php artisan config:clear` y `php artisan cache:clear` si haces cambios en `.env`.
+   - Si necesitas importar las coordenadas mapeadas desde el SQL de `coordenadas/mapeo_itfip-1.sql`, ejecuta:
+     - `php artisan import:coordenadas --truncate`
    - Revisa `storage/logs/laravel.log` si hay errores.
 
 Si quieres, puedo crear un `Procfile` o ajustar el `composer.json`/scripts para mejorar la integración con Railway.

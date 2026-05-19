@@ -28,6 +28,7 @@ const marcadorUsuario = ref(null);
 const isSimulando = ref(false);
 const progresoRuta = ref(0);
 const animRequest = ref(null);
+const markerAnimation = ref(null);
 const rutaRecorrida = ref(null);
 const WALKING_SPEED = 1.4;
 const compassEnabled = ref(false);
@@ -47,7 +48,181 @@ const distanciaFormateada = computed(() => {
   return distanciaRuta.value ? `${distanciaRuta.value.toLocaleString()} m` : '--';
 });
 
+const DESTINO_PRESETS = [
+  { key: 'Entrada Principal', label: 'Entrada Universidad' },
+  { key: 'Entrada Bloque 2', label: 'Bloque D' },
+  { key: 'Entrada Cafetería', label: 'Cafetería' }
+];
+const MAPPED_ZONE_RADIUS = 35;
+const searchQuery = ref('');
+const isSearchOpen = ref(false);
+const mappedZoneError = ref('');
 
+const destinosPermitidos = computed(() => {
+  return nodos.value
+    .filter(n => DESTINO_PRESETS.some(p => n.nombre.toLowerCase().includes(p.key.toLowerCase())))
+    .map(n => {
+      const preset = DESTINO_PRESETS.find(p => n.nombre.toLowerCase().includes(p.key.toLowerCase()));
+      return {
+        id: n.id,
+        label: preset ? preset.label : n.nombre,
+        originalName: n.nombre
+      };
+    });
+});
+
+const filteredDestinos = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  return query
+    ? destinosPermitidos.value.filter(destino => destino.label.toLowerCase().includes(query))
+    : destinosPermitidos.value;
+});
+
+const getDistanceToNearestNode = (position) => {
+  if (!position || nodos.value.length === 0) return Infinity;
+  const current = L.latLng(position.lat, position.lng);
+  let minDist = Infinity;
+  nodos.value.forEach(n => {
+    const nodePos = L.latLng(n.latitud, n.longitud);
+    const dist = current.distanceTo(nodePos);
+    if (dist < minDist) {
+      minDist = dist;
+    }
+  });
+  return minDist;
+};
+
+const closestPointOnSegment = (point, start, end) => {
+  const dx = end.lng - start.lng;
+  const dy = end.lat - start.lat;
+  if (dx === 0 && dy === 0) return start;
+  const t = ((point.lng - start.lng) * dx + (point.lat - start.lat) * dy) / (dx * dx + dy * dy);
+  if (t <= 0) return start;
+  if (t >= 1) return end;
+  return L.latLng(start.lat + dy * t, start.lng + dx * t);
+};
+
+const isInsideMappedArea = computed(() => {
+  if (!userLocation.value || nodos.value.length === 0) return false;
+  return getDistanceToNearestNode(userLocation.value) <= MAPPED_ZONE_RADIUS;
+});
+
+const selectedDestinoLabel = computed(() => {
+  const destino = destinosPermitidos.value.find(dest => String(dest.id) === String(selectedDestino.value));
+  return destino ? destino.label : '';
+});
+
+const clearRoute = () => {
+  rutaLayers.value.forEach(l => map.value.removeLayer(l));
+  rutaLayers.value = [];
+  rutaLatlngs.value = [];
+  distanciaRuta.value = 0;
+  tiempoSegundos.value = 0;
+  progresoRuta.value = 0;
+  if (destinoMarker.value) {
+    map.value.removeLayer(destinoMarker.value);
+    destinoMarker.value = null;
+  }
+};
+
+const cancelMarkerAnimation = () => {
+  if (markerAnimation.value) {
+    cancelAnimationFrame(markerAnimation.value);
+    markerAnimation.value = null;
+  }
+};
+
+const easeInOutQuad = (t) => {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+};
+
+const animateUserMarkerTo = (targetLatLng, durationMs = 420) => {
+  if (!marcadorUsuario.value) return;
+  cancelMarkerAnimation();
+
+  const start = performance.now();
+  const startPos = marcadorUsuario.value.getLatLng();
+  const startLat = startPos.lat;
+  const startLng = startPos.lng;
+  const deltaLat = targetLatLng.lat - startLat;
+  const deltaLng = targetLatLng.lng - startLng;
+
+  const step = (timestamp) => {
+    const elapsed = timestamp - start;
+    const t = Math.min(elapsed / durationMs, 1);
+    const eased = easeInOutQuad(t);
+    const lat = startLat + deltaLat * eased;
+    const lng = startLng + deltaLng * eased;
+    marcadorUsuario.value.setLatLng([lat, lng]);
+
+    if (t < 1 && !isSimulando.value) {
+      markerAnimation.value = requestAnimationFrame(step);
+    } else {
+      markerAnimation.value = null;
+      marcadorUsuario.value.setLatLng([targetLatLng.lat, targetLatLng.lng]);
+    }
+  };
+
+  markerAnimation.value = requestAnimationFrame(step);
+};
+
+const updateRouteProgressFromLocation = () => {
+  if (!rutaLatlngs.value.length || !rutaRecorrida.value || !userLocation.value) return;
+
+  const currentPos = L.latLng(userLocation.value.lat, userLocation.value.lng);
+  let closestPoint = null;
+  let closestDistance = Infinity;
+  let traveled = 0;
+  let accumulated = 0;
+
+  for (let i = 0; i < rutaLatlngs.value.length - 1; i++) {
+    const start = L.latLng(rutaLatlngs.value[i][0], rutaLatlngs.value[i][1]);
+    const end = L.latLng(rutaLatlngs.value[i + 1][0], rutaLatlngs.value[i + 1][1]);
+    const candidate = closestPointOnSegment(currentPos, start, end);
+    const dist = currentPos.distanceTo(candidate);
+    if (dist < closestDistance) {
+      closestDistance = dist;
+      closestPoint = candidate;
+      traveled = accumulated + start.distanceTo(candidate);
+    }
+    accumulated += start.distanceTo(end);
+  }
+
+  if (!closestPoint) return;
+
+  const traveledLatLngs = [];
+  let remaining = traveled;
+  for (let i = 0; i < rutaLatlngs.value.length - 1; i++) {
+    const start = L.latLng(rutaLatlngs.value[i][0], rutaLatlngs.value[i][1]);
+    const end = L.latLng(rutaLatlngs.value[i + 1][0], rutaLatlngs.value[i + 1][1]);
+    const segmentLength = start.distanceTo(end);
+    if (remaining >= segmentLength) {
+      traveledLatLngs.push([start.lat, start.lng]);
+      remaining -= segmentLength;
+    } else {
+      const ratio = remaining / segmentLength;
+      const lat = start.lat + (end.lat - start.lat) * ratio;
+      const lng = start.lng + (end.lng - start.lng) * ratio;
+      traveledLatLngs.push([start.lat, start.lng], [lat, lng]);
+      break;
+    }
+  }
+
+  rutaRecorrida.value.setLatLngs(traveledLatLngs);
+  const totalDistance = rutaLatlngs.value.reduce((sum, p, index) => {
+    if (index === 0) return 0;
+    return sum + L.latLng(rutaLatlngs.value[index - 1][0], rutaLatlngs.value[index - 1][1]).distanceTo(L.latLng(p[0], p[1]));
+  }, 0);
+  progresoRuta.value = totalDistance ? Math.min(100, Math.round((traveled / totalDistance) * 100)) : 0;
+};
+
+const setDestino = (destino) => {
+  selectedDestino.value = String(destino.id);
+  searchQuery.value = destino.label;
+  isSearchOpen.value = false;
+  mappedZoneError.value = '';
+  calcularRuta();
+};
 
 const obtenerDatos = async () => {
   try {
@@ -93,6 +268,13 @@ const obtenerDatos = async () => {
 
 const calcularRuta = () => {
   if (!selectedDestino.value || !marcadorUsuario.value) return;
+
+  if (!isInsideMappedArea.value) {
+    mappedZoneError.value = 'Aun no se ha mapeado esta zona.';
+    return;
+  }
+
+  mappedZoneError.value = '';
 
   // limpiar capas anteriores
   rutaLayers.value.forEach(l => map.value.removeLayer(l));
@@ -345,9 +527,22 @@ const updateMapTheme = () => {
 // SOLO actualiza la posición del marcador, NO mueve el mapa automáticamente
 watch(userLocation, (newLocation) => {
   if (newLocation && newLocation.lat && newLocation.lng && marcadorUsuario.value) {
-    marcadorUsuario.value.setLatLng([newLocation.lat, newLocation.lng]);
-    // NO hacer panTo automático - solo si el usuario presiona el botón de centrar
-    console.log('📍 Ubicación actualizada:', newLocation.lat, newLocation.lng);
+    const targetLatLng = L.latLng(newLocation.lat, newLocation.lng);
+    const currentPos = marcadorUsuario.value.getLatLng();
+    const distance = currentPos.distanceTo(targetLatLng);
+
+    cancelMarkerAnimation();
+    if (isSimulando.value || distance < 0.8) {
+      marcadorUsuario.value.setLatLng(targetLatLng);
+    } else {
+      animateUserMarkerTo(targetLatLng, 420);
+    }
+
+    console.log('📍 Ubicación actualizada:', newLocation.lat, newLocation.lng, 'dist:', Math.round(distance));
+  }
+
+  if (rutaLatlngs.value.length && newLocation && newLocation.lat && newLocation.lng) {
+    updateRouteProgressFromLocation();
   }
 }, { deep: true });
 
@@ -725,13 +920,39 @@ const testPermissions = async () => {
       <p class="itfip-sub">SELECCIONA TU DESTINO</p>
     </div>
     <div class="controls">
-      <select v-model="selectedDestino" @change="calcularRuta" class="gta-select">
-        <option value="">¿A DÓNDE VAS?</option>
-        <option :value="13">PARQUEADERO NUEVO</option>
-        <option v-for="n in nodos.filter(n => n.id > 1)" :key="n.id" :value="n.id">
-          {{ n.nombre }}
-        </option>
-      </select>
+      <div class="destination-search">
+        <label class="search-label" for="destino-search">¿A DÓNDE VAS?</label>
+        <input
+          id="destino-search"
+          type="text"
+          v-model="searchQuery"
+          @focus="isSearchOpen = true"
+          @blur="setTimeout(() => isSearchOpen = false, 200)"
+          placeholder="Solo zonas mapeadas: Bloque D, Cafetería, Entrada Universidad"
+          class="destination-input"
+        />
+
+        <div class="search-list" v-if="isSearchOpen && filteredDestinos.length">
+          <button
+            v-for="destino in filteredDestinos"
+            :key="destino.id"
+            type="button"
+            class="search-item"
+            @click="setDestino(destino)"
+          >
+            {{ destino.label }}
+          </button>
+        </div>
+
+        <div class="search-empty" v-if="isSearchOpen && !filteredDestinos.length">
+          No hay destinos mapeados que coincidan.
+        </div>
+
+        <p class="error-message" v-if="mappedZoneError">{{ mappedZoneError }}</p>
+        <p class="zone-status" v-else-if="userLocation && !isInsideMappedArea">
+          Aun no se ha mapeado esta zona. Acércate a un área registrada.
+        </p>
+      </div>
 
       <div class="info-panel" v-if="rutaLatlngs.length">
         <div class="stats">
@@ -1224,6 +1445,98 @@ const testPermissions = async () => {
 .wrap.day .gta-select:hover,
 .wrap.day .gta-select:focus {
   box-shadow: 0 0 0 3px rgba(14,165,233,.16);
+}
+
+.destination-search {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.search-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--txt2);
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.destination-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--bo);
+  background: var(--inp);
+  color: var(--txt);
+  font-family: var(--F);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .25s ease, box-shadow .25s ease, background .25s ease;
+}
+
+.destination-input:focus {
+  border-color: var(--b);
+  background: var(--inpf);
+  box-shadow: 0 0 0 4px rgba(125,211,252,.12);
+}
+
+.search-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-top: 10px;
+  background: var(--surf);
+  border: 1px solid var(--bo);
+  border-radius: 16px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 36px rgba(0,0,0,.24);
+  z-index: 1002;
+  overflow: hidden;
+}
+
+.search-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: var(--txt);
+  font-family: var(--F);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+
+.search-item:last-child {
+  border-bottom: none;
+}
+
+.search-item:hover,
+.search-item:focus {
+  background: rgba(14,165,233,0.14);
+  color: var(--txt);
+}
+
+.search-empty,
+.error-message,
+.zone-status {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.search-empty {
+  color: var(--txt2);
+}
+
+.error-message {
+  color: #fda4af;
+}
+
+.zone-status {
+  color: #fde68a;
 }
 
 .custom-div-icon { background: none; border: none; }
