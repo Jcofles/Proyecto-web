@@ -14,42 +14,25 @@ use Illuminate\Validation\Rule;
 class NodoController extends Controller
 {
     /**
-     * Obtener todos los nodos (respuesta JSON simple).
+     * Obtener todos los nodos desde el array en memoria (sin BD).
      */
     public function index(): JsonResponse
     {
-        try {
-            if (Nodo::count() === 0) {
-                return response()->json($this->defaultNodos());
-            }
-
-            return response()->json(Nodo::all());
-        } catch (\Throwable $e) {
-            return response()->json($this->defaultNodos());
-        }
+        return response()->json($this->defaultNodos());
     }
 
     /**
-     * Obtener las conexiones entre nodos.
+     * Obtener las conexiones entre nodos desde el array en memoria (sin BD).
      */
     public function conexiones(): JsonResponse
     {
-        try {
-            $conexiones = DB::table('conexiones')->get();
-            if ($conexiones->isNotEmpty()) {
-                return response()->json($conexiones);
-            }
-        } catch (\Throwable $e) {
-            // Ignorar errores de migración o tabla faltante y usar respaldo.
-        }
-
         return response()->json($this->defaultConexiones());
     }
 
     private function defaultNodos(): array
     {
         return [
-            ['id' => 1, 'nombre' => 'Entrada Principal', 'latitud' => 4.15402640, 'longitud' => -74.89564350, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 1, 'nombre' => 'Entrada Universidad', 'latitud' => 4.15402640, 'longitud' => -74.89564350, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 2, 'nombre' => 'Paso 2', 'latitud' => 4.15409380, 'longitud' => -74.89572580, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 3, 'nombre' => 'Paso 3', 'latitud' => 4.15419060, 'longitud' => -74.89577310, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 4, 'nombre' => 'Paso 4', 'latitud' => 4.15426590, 'longitud' => -74.89585030, 'tipo_id' => 2, 'piso' => 1],
@@ -92,12 +75,12 @@ class NodoController extends Controller
             ['id' => 41, 'nombre' => 'Paso 41', 'latitud' => 4.15645290, 'longitud' => -74.89761870, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 42, 'nombre' => 'Paso 42', 'latitud' => 4.15644660, 'longitud' => -74.89766130, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 43, 'nombre' => 'Paso 43', 'latitud' => 4.15650780, 'longitud' => -74.89772140, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 44, 'nombre' => 'Entrada Bloque 2', 'latitud' => 4.15653360, 'longitud' => -74.89773380, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 44, 'nombre' => 'Bloque D', 'latitud' => 4.15653360, 'longitud' => -74.89773380, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 45, 'nombre' => 'Paso 45', 'latitud' => 4.15656930, 'longitud' => -74.89774250, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 46, 'nombre' => 'Paso 46', 'latitud' => 4.15666460, 'longitud' => -74.89777130, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 47, 'nombre' => 'Paso 47', 'latitud' => 4.15679740, 'longitud' => -74.89775370, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 48, 'nombre' => 'Paso 48', 'latitud' => 4.15692010, 'longitud' => -74.89771320, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 49, 'nombre' => 'Entrada Cafetería', 'latitud' => 4.15692990, 'longitud' => -74.89763710, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 49, 'nombre' => 'Cafeteria', 'latitud' => 4.15692990, 'longitud' => -74.89763710, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 50, 'nombre' => 'Paso Cafetería', 'latitud' => 4.15690810, 'longitud' => -74.89758290, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 51, 'nombre' => 'Escalera Cafetería', 'latitud' => 4.15691110, 'longitud' => -74.89764240, 'tipo_id' => 4, 'piso' => 1],
         ];

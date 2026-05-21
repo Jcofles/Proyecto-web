@@ -14,6 +14,11 @@ const { userLocation, movementHeading, isInsideCampus, isLoading, error } = useG
 const { heading: compassHeading, accuracy, isSupported, error: compassError, startCompass, stopCompass } = useCompass();
 const compassSupported = ref(true);
 
+// Normalizar texto removiendo tildes y caracteres especiales
+const normalizarTexto = (texto) => {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+};
+
 const MAP_CENTER = [4.1563, -74.8975]; 
 const map = ref(null);
 const nodos = ref([]);
@@ -49,9 +54,9 @@ const distanciaFormateada = computed(() => {
 });
 
 const DESTINO_PRESETS = [
-  { keys: ['Entrada Principal', 'Entrada'], label: 'Entrada Universidad' },
-  { keys: ['Entrada Bloque 2', 'Bloque D', 'Bloque 2', 'Bloque'], label: 'Bloque D' },
-  { keys: ['Entrada Cafetería', 'Cafetería'], label: 'Cafetería' }
+  { keys: ['Entrada Universidad', 'Entrada Principal', 'Entrada'], label: 'Entrada Universidad' },
+  { keys: ['Bloque D', 'Bloque 2'], label: 'Bloque D' },
+  { keys: ['Cafeteria', 'Cafetería'], label: 'Cafeteria' }
 ];
 const MAPPED_ZONE_RADIUS = 35;
 const searchQuery = ref('');
@@ -60,9 +65,9 @@ const mappedZoneError = ref('');
 
 const destinosPermitidos = computed(() => {
   return nodos.value
-    .filter(n => DESTINO_PRESETS.some(p => (p.keys || []).some(k => n.nombre.toLowerCase().includes(k.toLowerCase()))))
+    .filter(n => DESTINO_PRESETS.some(p => (p.keys || []).some(k => normalizarTexto(n.nombre).includes(normalizarTexto(k)))))
     .map(n => {
-      const preset = DESTINO_PRESETS.find(p => (p.keys || []).some(k => n.nombre.toLowerCase().includes(k.toLowerCase())));
+      const preset = DESTINO_PRESETS.find(p => (p.keys || []).some(k => normalizarTexto(n.nombre).includes(normalizarTexto(k))));
       return {
         id: n.id,
         label: preset ? preset.label : n.nombre,
@@ -72,9 +77,9 @@ const destinosPermitidos = computed(() => {
 });
 
 const filteredDestinos = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase();
+  const query = normalizarTexto(searchQuery.value.trim());
   return query
-    ? destinosPermitidos.value.filter(destino => destino.label.toLowerCase().includes(query))
+    ? destinosPermitidos.value.filter(destino => normalizarTexto(destino.label).includes(query))
     : destinosPermitidos.value;
 });
 
