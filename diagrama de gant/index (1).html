@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS Bloque D · ITFIP · Gantt 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:     #0a0a0a;
+  --paper:   #f2ede6;
+  --cream:   #e8e2d9;
+  --rule:    #c8c0b4;
+  --fog:     #a09888;
+  --signal:  #d4380d;
+  --signal2: #1a1a2e;
+  --w: 52px;
+  --row-h: 48px;
+  --bar-h: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Barlow', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ── MASTHEAD ── */
+.masthead {
+  background: var(--signal2);
+  color: #fff;
+  padding: 0 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 68px;
+  border-bottom: 3px solid var(--signal);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.masthead-left { display: flex; align-items: center; gap: 1.25rem; }
+
+.project-code {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--signal);
+  border: 1px solid var(--signal);
+  padding: 3px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.project-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+}
+.project-title em { font-style: normal; color: rgba(255,255,255,0.4); font-weight: 400; }
+
+.masthead-stats { display: flex; align-items: center; gap: 1.75rem; }
+
+.stat { text-align: right; }
+.stat-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+.stat-lbl {
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+.dv { width: 1px; height: 32px; background: rgba(255,255,255,0.1); }
+
+/* ── TEAM STRIP ── */
+.team-strip {
+  background: #141e33;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 0.5rem 2.5rem;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.team-member { display: flex; align-items: center; gap: 0.55rem; }
+
+.member-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  flex-shrink: 0;
+}
+
+.member-name { font-size: 0.7rem; font-weight: 400; color: rgba(255,255,255,0.45); }
+.member-role {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+}
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: calc(100vh - 112px); }
+
+/* Sidebar */
+.sidebar {
+  width: 190px;
+  flex-shrink: 0;
+  background: var(--cream);
+  border-right: 1px solid var(--rule);
+  padding: 1.25rem 0;
+  position: sticky;
+  top: 68px;
+  height: calc(100vh - 68px);
+  overflow-y: auto;
+}
+
+.sidebar-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fog);
+  padding: 0 1.1rem;
+  margin-bottom: 0.85rem;
+}
+
+.phase-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  text-decoration: none;
+}
+
+.phase-nav-item:hover { background: rgba(0,0,0,0.04); }
+.phase-nav-item.active { background: rgba(0,0,0,0.05); border-left-color: var(--signal); }
+
+.nav-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+.nav-text {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.nav-weeks { font-size: 0.6rem; color: var(--fog); font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+/* Content area */
+.content { flex: 1; overflow-x: auto; }
+
+/* ── MONTH + RULER ── */
+.timeline-head {
+  background: var(--paper);
+}
+
+.month-row {
+  display: grid;
+  grid-template-columns: 300px repeat(16, var(--w));
+  min-width: calc(300px + 16 * var(--w));
+  background: var(--cream);
+  border-bottom: 1px solid var(--rule);
+}
+
+.month-spacer {
+  border-right: 1px solid var(--rule);
+}
+
+.month-cell {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fog);
+  text-align: center;
+  padding: 0.42rem 0;
+  border-left: 1px solid var(--rule);
+}
+
+.ruler-row {
+  display: grid;
+  grid-template-columns: 300px repeat(16, var(--w));
+  min-width: calc(300px + 16 * var(--w));
+  background: var(--signal2);
+  border-bottom: 2px solid var(--ink);
+}
+
+.ruler-label {
+  padding: 0 1.1rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+.ruler-week {
+  text-align: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.5);
+  padding: 0.6rem 0;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── GANTT BODY ── */
+#gantt-body { min-width: calc(300px + 16 * var(--w)); }
+
+.phase-block { border-bottom: 1px solid var(--rule); scroll-margin-top: 80px; }
+
+/* Phase header */
+.phase-hdr {
+  display: grid;
+  grid-template-columns: 300px repeat(16, var(--w));
+  min-width: calc(300px + 16 * var(--w));
+  height: 34px;
+}
+
+.phase-hdr-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0 1.1rem;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.phase-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  padding: 2px 7px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.13);
+}
+
+.phase-hdr-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.88);
+}
+
+.phase-hdr-wcell {
+  border-left: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
+}
+
+/* Task row */
+.task-row {
+  display: grid;
+  grid-template-columns: 300px repeat(16, var(--w));
+  min-width: calc(300px + 16 * var(--w));
+  height: var(--row-h);
+  align-items: center;
+  border-top: 1px solid rgba(0,0,0,0.055);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.task-info {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0 0.65rem 0 1.1rem;
+  border-right: 1px solid var(--rule);
+  height: 100%;
+  overflow: hidden;
+}
+
+.resp-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.task-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.task-label {
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.task-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Progress mini bar in task list */
+.prog-track {
+  width: 48px;
+  height: 4px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.prog-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.prog-pct {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--fog);
+}
+
+/* Risk badge */
+.risk-chip {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.week-slot {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+  border-left: 1px solid rgba(0,0,0,0.045);
+  position: relative;
+}
+
+/* Bar with progress overlay */
+.bar-wrap {
+  height: var(--bar-h);
+  width: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-bg {
+  position: absolute;
+  inset: 0;
+}
+
+.bar-prog {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: rgba(255,255,255,0.32);
+}
+
+/* rounded caps */
+.bar-wrap.cap-left  .bar-bg,
+.bar-wrap.cap-left  .bar-prog { border-radius: 4px 0 0 4px; }
+.bar-wrap.cap-right .bar-bg   { border-radius: 0 4px 4px 0; }
+.bar-wrap.cap-both  .bar-bg,
+.bar-wrap.cap-both  .bar-prog { border-radius: 4px; }
+
+.task-row:hover .bar-bg { filter: brightness(1.1); }
+
+/* ── FOOTER LEGEND ── */
+.footer {
+  background: var(--ink);
+  color: rgba(255,255,255,0.4);
+  padding: 0.9rem 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.leg-sw { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.footer-note { margin-left: auto; font-size: 0.6rem; color: rgba(255,255,255,0.18); font-style: italic; }
+
+/* ── DRAWER ── */
+#overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,10,10,0.55);
+  backdrop-filter: blur(3px);
+  z-index: 900;
+  display: none;
+}
+
+#drawer {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: 420px;
+  background: #fff;
+  z-index: 901;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.16,1,0.3,1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+}
+
+#drawer.open { transform: translateX(0); }
+
+.d-phase-bar { height: 4px; flex-shrink: 0; }
+
+.d-head {
+  padding: 1.6rem 1.75rem 1.1rem;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.d-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-bottom: 0.8rem;
+}
+
+.d-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 0.8rem;
+}
+
+.d-meta { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; }
+
+.d-chip {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #888;
+}
+.d-chip b { color: var(--ink); font-weight: 600; }
+
+/* Progress bar in drawer */
+.d-progress-wrap {
+  margin-top: 1rem;
+}
+.d-progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-size: 0.7rem;
+  color: #888;
+}
+.d-progress-label b { color: var(--ink); font-weight: 700; font-size: 0.8rem; }
+.d-progress-track {
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.d-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.d-risk-row {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.d-priority-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.d-risk-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 2px;
+}
+
+.d-body { padding: 1.4rem 1.75rem; overflow-y: auto; flex: 1; }
+
+.d-section-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 0.65rem;
+}
+
+.d-desc {
+  font-size: 0.86rem;
+  line-height: 1.8;
+  color: #444;
+  font-weight: 300;
+}
+
+.d-timeline-box {
+  margin-top: 1.5rem;
+  padding: 1.1rem;
+  background: #f7f4f0;
+  border-radius: 8px;
+  border: 1px solid #e6e1da;
+}
+
+.mini-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; height: 10px; }
+.mini-w { height: 100%; background: #ddd8d0; border-radius: 2px; }
+.mini-w.on { border-radius: 2px; }
+
+.mini-lbls {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  margin-top: 5px;
+}
+.mini-lbl { font-size: 8px; text-align: center; color: #bbb; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; }
+
+.d-close {
+  position: absolute;
+  top: 1rem; right: 1.1rem;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  color: #888;
+  transition: all 0.15s;
+}
+.d-close:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.phase-block { animation: fadeUp 0.4s ease both; }
+.phase-block:nth-child(1){animation-delay:.04s}
+.phase-block:nth-child(2){animation-delay:.08s}
+.phase-block:nth-child(3){animation-delay:.12s}
+.phase-block:nth-child(4){animation-delay:.16s}
+.phase-block:nth-child(5){animation-delay:.2s}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--fog)}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="masthead-left">
+    <div class="project-code">GPS·ITFIP·2026</div>
+    <div class="project-title">Sistema de Localización &nbsp;<em>Bloque D</em></div>
+  </div>
+  <div class="masthead-stats">
+    <div class="stat"><div class="stat-val">16</div><div class="stat-lbl">Semanas</div></div>
+    <div class="dv"></div>
+    <div class="stat"><div class="stat-val">5</div><div class="stat-lbl">Fases</div></div>
+    <div class="dv"></div>
+    <div class="stat"><div class="stat-val">12</div><div class="stat-lbl">Tareas</div></div>
+    <div class="dv"></div>
+    <div class="stat"><div class="stat-val">3</div><div class="stat-lbl">Integrantes</div></div>
+  </div>
+</header>
+
+<!-- DIAGRAM SELECTOR -->
+<div id="diagram-selector" style="background: #f2ede6; border-bottom: 2px solid #c8c0b4; padding: 1rem 2.5rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+  <span style="font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #a09888;">Ver diagrama mensual:</span>
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <button class="diagram-btn active" onclick="switchDiagram(0)" style="background: #1a1a2e; color: #fff;">📅 Marzo (Semanas 1-4)</button>
+    <button class="diagram-btn" onclick="switchDiagram(1)" style="background: #0f3460; color: #fff;">📅 Abril (Semanas 5-8)</button>
+    <button class="diagram-btn" onclick="switchDiagram(2)" style="background: #533483; color: #fff;">📅 Mayo (Semanas 9-12)</button>
+  </div>
+  <span id="diagram-info" style="margin-left: auto; font-family: 'Barlow Condensed', sans-serif; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #333; background: rgba(255,255,255,0.5); padding: 0.5rem 0.8rem; border-radius: 3px;"></span>
+</div>
+
+<style>
+.diagram-btn {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: opacity 0.2s, filter 0.2s;
+}
+.diagram-btn:hover { filter: brightness(1.1); }
+.diagram-btn.active { opacity: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.diagram-btn:not(.active) { opacity: 0.6; }
+</style>
+
+<!-- TEAM -->
+<div class="team-strip">
+  <div class="team-member">
+    <div class="member-avatar" style="background:#1a1a2e">JC</div>
+    <div><div class="member-name">Julian Esteban Cofles Olivar</div><div class="member-role">Ing. Sistemas</div></div>
+  </div>
+  <div class="team-member">
+    <div class="member-avatar" style="background:#0f3460">WM</div>
+    <div><div class="member-name">Wilfer Jhojan Mendoza Sánchez</div><div class="member-role">Ing. Sistemas</div></div>
+  </div>
+  <div class="team-member">
+    <div class="member-avatar" style="background:#d4380d">CV</div>
+    <div><div class="member-name">Carlos Valencia Rivera</div><div class="member-role">Ing. Sistemas</div></div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">Fases</div>
+    <div id="phase-nav"></div>
+  </aside>
+
+  <div class="content">
+    <div class="timeline-head">
+      <div class="month-row">
+        <div class="month-spacer"></div>
+        <div class="month-cell" style="grid-column:span 4">Marzo</div>
+        <div class="month-cell" style="grid-column:span 4">Abril</div>
+        <div class="month-cell" style="grid-column:span 4">Mayo</div>
+        <div class="month-cell" style="grid-column:span 4">Junio</div>
+      </div>
+      <div class="ruler-row">
+        <div class="ruler-label">Actividad</div>
+        <div class="ruler-week">S1</div><div class="ruler-week">S2</div>
+        <div class="ruler-week">S3</div><div class="ruler-week">S4</div>
+        <div class="ruler-week">S5</div><div class="ruler-week">S6</div>
+        <div class="ruler-week">S7</div><div class="ruler-week">S8</div>
+        <div class="ruler-week">S9</div><div class="ruler-week">S10</div>
+        <div class="ruler-week">S11</div><div class="ruler-week">S12</div>
+        <div class="ruler-week">S13</div><div class="ruler-week">S14</div>
+        <div class="ruler-week">S15</div><div class="ruler-week">S16</div>
+      </div>
+    </div>
+    <div id="gantt-body"></div>
+  </div>
+</div>
+
+<footer class="footer" id="footer"></footer>
+
+<div id="overlay" onclick="closeDrawer()"></div>
+<div id="drawer">
+  <button class="d-close" onclick="closeDrawer()">&#215;</button>
+  <div class="d-phase-bar" id="d-pbar"></div>
+  <div class="d-head">
+    <div class="d-tag" id="d-tag"></div>
+    <div class="d-title" id="d-title"></div>
+    <div class="d-meta">
+      <div class="d-chip">Resp: <b id="d-resp"></b></div>
+      <div class="d-chip">Asignado: <b id="d-asig"></b></div>
+      <div class="d-chip">Inicio: <b id="d-start"></b></div>
+      <div class="d-chip">Duración: <b id="d-dur"></b></div>
+    </div>
+    <!-- Barra de progreso del drawer -->
+    <div class="d-progress-wrap">
+      <div class="d-progress-label">
+        <span>Progreso</span>
+        <b id="d-prog-pct">0%</b>
+      </div>
+      <div class="d-progress-track">
+        <div class="d-progress-fill" id="d-prog-fill"></div>
+      </div>
+    </div>
+    <div class="d-risk-row">
+      <div class="d-priority-tag" id="d-priority"></div>
+      <div class="d-risk-tag" id="d-risk"></div>
+    </div>
+  </div>
+  <div class="d-body">
+    <div class="d-section-label">Descripción</div>
+    <div class="d-desc" id="d-desc"></div>
+    <div class="d-timeline-box">
+      <div class="d-section-label" style="margin-bottom:.7rem">Posición en el cronograma</div>
+      <div class="mini-grid" id="d-mini"></div>
+      <div class="mini-lbls" id="d-mini-lbl"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ──────────────────────────────────────────────
+   RISK CONFIG
+   Categorías tomadas del Excel:
+   Según lo previsto, Riesgo bajo, Riesgo medio,
+   Riesgo alto, Hito, Objetivo, Sin asignar
+────────────────────────────────────────────── */
+const RISK_STYLE = {
+  'según lo previsto': { bg: '#e6f7e6', color: '#1a7a1a', label: 'Según lo previsto' },
+  'riesgo bajo':       { bg: '#e8f4fd', color: '#1565c0', label: 'Riesgo bajo' },
+  'riesgo medio':      { bg: '#fff8e1', color: '#b7700d', label: 'Riesgo medio' },
+  'riesgo alto':       { bg: '#fdecea', color: '#c62828', label: 'Riesgo alto' },
+  'hito':              { bg: '#f3e5f5', color: '#6a1b9a', label: 'Hito' },
+  'objetivo':          { bg: '#e8eaf6', color: '#283593', label: 'Objetivo' },
+  'sin asignar':       { bg: '#f5f5f5', color: '#757575', label: 'Sin asignar' },
+};
+
+function riskStyle(cat) {
+  if (!cat) return RISK_STYLE['sin asignar'];
+  return RISK_STYLE[cat.toLowerCase()] || RISK_STYLE['sin asignar'];
+}
+
+/* ──────────────────────────────────────────────
+   DATA — Diagramas mensuales con contexto real del proyecto
+   Basados en commits de GitHub y actividades completadas
+────────────────────────────────────────────── */
+const DIAGRAMS = [
+  // DIAGRAM 0: MARZO 2026 - Fase Inicial (Semanas 1-4)
+  {
+    title: 'Marzo 2026 - Fase Inicial',
+    weeks: 4,
+    phases: [
+      {
+        name: 'Planificación y Localización',
+        short: 'Inicio',
+        color: '#1a1a2e',
+        light: '#eef0f8',
+        tasks: [
+          {
+            name: 'Definición de alcance del proyecto',
+            resp: 'Todos', asignado: 'Julian · Wilfer · Carlos', start: 1, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Objetivos del proyecto definidos: Sistema GPS para localizar salones en campus ITFIP. Permitir localización mediante GPS del celular, validar coordenadas, generar rutas entre nodos.'
+          },
+          {
+            name: 'Validación de ubicación (error 500 resuelto)',
+            resp: 'Julian', asignado: 'Julian Cofles', start: 1, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Implementación inicial de validación de ubicación. Primeros errores identificados y resueltos. Commit: validacion de ubicacion y arreglo del error 500 (03-06).'
+          },
+          {
+            name: 'Ubicación en tiempo real (básica)',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 1, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Sistema de geolocalización en tiempo real implementado. Captura de coordenadas GPS del dispositivo funcional (03-06).'
+          },
+          {
+            name: 'Implementación de túnel (conexión)',
+            resp: 'Carlos', asignado: 'Carlos Valencia', start: 2, dur: 1,
+            priority: 'media', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Configuración de túnel para conectar frontend y backend localmente. Primer sistema de comunicación establecido (03-06).'
+          }
+        ]
+      },
+      {
+        name: 'Desarrollo Móvil y Sensores',
+        short: 'Sensores',
+        color: '#0f3460',
+        light: '#edf4fb',
+        tasks: [
+          {
+            name: 'Mapeo del Bloque D e integración giroscopio',
+            resp: 'Julian', asignado: 'Julian Cofles', start: 2, dur: 1,
+            priority: 'alta', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Mapeo digital del Bloque D completado. Primer intento de integración de giroscopio para detectar orientación del usuario (03-08).'
+          },
+          {
+            name: 'Pruebas de localización #1',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 2, dur: 1,
+            priority: 'alta', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Primeras pruebas en el campo del sistema de localización. Validación de precisión GPS en campus (03-12).'
+          },
+          {
+            name: 'Giroscopio funcional y correcciones',
+            resp: 'Carlos', asignado: 'Carlos Valencia', start: 3, dur: 1,
+            priority: 'media', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Giroscopio completamente funcional. Sistema de notificaciones para instalación agregado. Errores en notificaciones resueltos (03-12).'
+          },
+          {
+            name: 'Mejora de túnel y brújula',
+            resp: 'Todos', asignado: 'Julian · Wilfer · Carlos', start: 4, dur: 1,
+            priority: 'media', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Mejoras en comunicación backend-frontend. Brújula digital integrada para orientación de usuario (03-14).'
+          }
+        ]
+      }
+    ]
+  },
+
+  // DIAGRAM 1: ABRIL 2026 - Desarrollo Intermedio (Semanas 5-8)
+  {
+    title: 'Abril 2026 - Desarrollo Intermedio',
+    weeks: 4,
+    phases: [
+      {
+        name: 'Seguridad y Autenticación',
+        short: 'Seguridad',
+        color: '#1a1a2e',
+        light: '#eef0f8',
+        tasks: [
+          {
+            name: 'Mejoras de seguridad nivel 1',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 1, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Implementación de validaciones de seguridad en API. Sanitización de inputs. Control de acceso básico (04-09).'
+          },
+          {
+            name: 'Sistema de migas de pan (breadcrumb)',
+            resp: 'Carlos', asignado: 'Carlos Valencia', start: 1, dur: 1,
+            priority: 'media', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Navegación con migas de pan implementada. Permite a usuarios saber su ubicación en la estructura de aplicación (04-16).'
+          },
+          {
+            name: 'Autenticación de dos pasos',
+            resp: 'Julian', asignado: 'Julian Cofles', start: 2, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Sistema de autenticación de dos pasos implementado. Verificación adicional de identidad del usuario. Tokens de verificación configurados (04-23).'
+          }
+        ]
+      },
+      {
+        name: 'Backend Base de Datos',
+        short: 'Backend BD',
+        color: '#533483',
+        light: '#f3effe',
+        tasks: [
+          {
+            name: 'Configuración inicial entorno Laravel',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 1, dur: 2,
+            priority: 'media', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Laravel instalado y configurado. Base de datos MySQL conectada. Migraciones iniciales ejecutadas.'
+          },
+          {
+            name: 'Estructura de tablas en BD',
+            resp: 'Carlos', asignado: 'Carlos Valencia', start: 2, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Tablas de usuarios y configuraciones iniciales creadas. Índices definidos. Schema optimizado para crecimiento.'
+          },
+          {
+            name: 'Configuración de frontend Vue',
+            resp: 'Julian', asignado: 'Julian Cofles', start: 3, dur: 2,
+            priority: 'media', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Vue.js configurado. Router básico establecido. Componentes iniciales creados. Vite como bundler configurado.'
+          }
+        ]
+      }
+    ]
+  },
+
+  // DIAGRAM 2: MAYO 2026 - Recta Final (Semanas 9-12) - ESTADO ACTUAL
+  {
+    title: 'Mayo 2026 - Recta Final (Estado Actual)',
+    weeks: 4,
+    phases: [
+      {
+        name: 'API y Búsqueda GPS',
+        short: 'API GPS',
+        color: '#1a1a2e',
+        light: '#eef0f8',
+        tasks: [
+          {
+            name: 'Tabla nodos en BD completada',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 1, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Tabla nodos con id, nombre, latitud, longitud completada. 40+ puntos del campus capturados y almacenados (05-19).'
+          },
+          {
+            name: 'Sistema de búsqueda y rutas GPS',
+            resp: 'Julian', asignado: 'Julian Cofles', start: 1, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Búsqueda de salones implementada. Algoritmo básico de rutas funcional. Endpoint GET /rutas/:origen/:destino creado (05-19).'
+          },
+          {
+            name: 'API endpoints para consultas de nodos',
+            resp: 'Carlos', asignado: 'Carlos Valencia', start: 2, dur: 1,
+            priority: 'alta', category: 'Según lo previsto', progress: 0.8,
+            desc: 'Endpoints: GET /nodos, POST /nodos/search, GET /nodos/:id. Respuestas en JSON estructuradas. CORS configurado.'
+          }
+        ]
+      },
+      {
+        name: 'Deploy en Railway',
+        short: 'Producción',
+        color: '#0f3460',
+        light: '#edf4fb',
+        tasks: [
+          {
+            name: 'Servicios de email (Brevo)',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 1, dur: 1,
+            priority: 'media', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Integración con Brevo para envío de emails. Confirmación de registro y verificación de email implementada (05-16).'
+          },
+          {
+            name: 'Controlador de registro (RegisterController)',
+            resp: 'Julian', asignado: 'Julian Cofles', start: 1, dur: 1,
+            priority: 'alta', category: 'Objetivo', progress: 1.0,
+            desc: 'Controlador de registro en Laravel creado. Validaciones de email y contraseña implementadas. Tokens de verificación configurados (05-16).'
+          },
+          {
+            name: 'Configuración Railway para deploy',
+            resp: 'Carlos', asignado: 'Carlos Valencia', start: 2, dur: 2,
+            priority: 'alta', category: 'Riesgo medio', progress: 0.7,
+            desc: 'Railway configurado para producción. Variables de entorno definidas. BD en producción parcialmente funcional. 8 ajustes realizados (05-15 a 05-16).'
+          }
+        ]
+      },
+      {
+        name: 'Integración Final',
+        short: 'Integración',
+        color: '#533483',
+        light: '#f3effe',
+        tasks: [
+          {
+            name: 'Corrección API y comunicación coordenadas',
+            resp: 'Julian', asignado: 'Julian Cofles', start: 3, dur: 1,
+            priority: 'alta', category: 'Según lo previsto', progress: 0.9,
+            desc: 'Problemas en api.php resueltos. Comunicación backend-frontend para coordenadas funcionando (05-19, 05-21).'
+          },
+          {
+            name: 'Ajustes de ubicación y geolocalización',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 2, dur: 2,
+            priority: 'media', category: 'Riesgo bajo', progress: 0.8,
+            desc: 'Ajustes finales de precisión GPS. Comparación de ubicación actual vs nodos. Pruebas en tiempo real con dispositivos móviles (05-19).'
+          },
+          {
+            name: 'Actualización logo y configuración',
+            resp: 'Carlos', asignado: 'Carlos Valencia', start: 4, dur: 1,
+            priority: 'baja', category: 'Según lo previsto', progress: 1.0,
+            desc: 'Logo e identidad visual actualizado. Nombres de proyecto sincronizados. Configuración global revisada (05-19).'
+          }
+        ]
+      },
+      {
+        name: 'Pruebas y Refinamiento',
+        short: 'QA',
+        color: '#8b1a1a',
+        light: '#fdf0f0',
+        tasks: [
+          {
+            name: 'Pruebas de sistema integrado',
+            resp: 'Todos', asignado: 'Julian · Wilfer · Carlos', start: 3, dur: 2,
+            priority: 'alta', category: 'Riesgo medio', progress: 0.5,
+            desc: 'Pruebas integrales del sistema. Búsqueda + geolocalización + rutas. Identificación de bugs pendientes. QA en progreso.'
+          },
+          {
+            name: 'Optimizaciones finales (pendiente)',
+            resp: 'Wilfer', asignado: 'Wilfer Mendoza', start: 4, dur: 1,
+            priority: 'media', category: 'Sin asignar', progress: 0.2,
+            desc: 'Optimización de queries BD. Caché de búsquedas. Compresión de respuestas. Iniciaría próxima semana.'
+          }
+        ]
+      }
+    ]
+  }
+];
+
+const DIAGRAMS_INFO = [
+  { index: 0, title: 'Marzo 2026 - Fase Inicial', subtitle: 'Semanas 1-4: Localización y Sensores' },
+  { index: 1, title: 'Abril 2026 - Desarrollo Intermedio', subtitle: 'Semanas 5-8: Seguridad y Backend' },
+  { index: 2, title: 'Mayo 2026 - Recta Final', subtitle: 'Semanas 9-12: API, Deploy e Integración' }
+];
+
+let WEEKS = DIAGRAMS[0].weeks;
+
+/* ──────────────────────────────────────────────
+   DIAGRAM SWITCHING FUNCTION
+────────────────────────────────────────────── */
+let CURRENT_WEEKS = 4;
+
+function switchDiagram(index) {
+  const diagram = DIAGRAMS[index];
+  const info = DIAGRAMS_INFO[index];
+
+  CURRENT_WEEKS = diagram.weeks;
+
+  // Update button states
+  document.querySelectorAll('.diagram-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
+
+  // Update info
+  document.getElementById('diagram-info').textContent = info.title;
+
+  // Clear current content
+  document.getElementById('gantt-body').innerHTML = '';
+  document.getElementById('phase-nav').innerHTML = '';
+
+  // Update month/ruler dynamically
+  updateMonthAndRuler(diagram.weeks, index);
+
+  // Re-render with new data
+  renderGantt(diagram.phases);
+  renderSidebar(diagram.phases);
+  renderFooter(diagram.phases);
+}
+
+function updateMonthAndRuler(weeks, diagramIndex) {
+  const monthNames = ['Marzo 2026', 'Abril 2026', 'Mayo 2026'];
+  const monthRow = document.querySelector('.month-row');
+  const rulerRow = document.querySelector('.ruler-row');
+
+  // Calculate grid template columns
+  const gridCols = `300px repeat(${weeks}, var(--w))`;
+  const minWidth = `calc(300px + ${weeks} * var(--w))`;
+
+  monthRow.style.gridTemplateColumns = gridCols;
+  monthRow.style.minWidth = minWidth;
+  rulerRow.style.gridTemplateColumns = gridCols;
+  rulerRow.style.minWidth = minWidth;
+
+  // Update month header
+  monthRow.innerHTML = `<div class="month-spacer"></div><div class="month-cell" style="grid-column:span ${weeks}">${monthNames[diagramIndex]}</div>`;
+
+  // Update ruler with weeks
+  rulerRow.innerHTML = '<div class="ruler-label">Actividad</div>';
+  for (let w = 1; w <= weeks; w++) {
+    const div = document.createElement('div');
+    div.className = 'ruler-week';
+    div.textContent = 'S' + w;
+    rulerRow.appendChild(div);
+  }
+}
+
+function renderGantt(phases) {
+  const body = document.getElementById('gantt-body');
+
+  phases.forEach((ph, pi) => {
+    const block = document.createElement('div');
+    block.className = 'phase-block';
+    block.id = 'ph-' + pi;
+
+    // Phase header with dynamic grid
+    const hdr = document.createElement('div');
+    hdr.className = 'phase-hdr';
+    hdr.style.background = ph.color;
+    hdr.style.gridTemplateColumns = `300px repeat(${CURRENT_WEEKS}, var(--w))`;
+    hdr.style.minWidth = `calc(300px + ${CURRENT_WEEKS} * var(--w))`;
+
+    const hl = document.createElement('div');
+    hl.className = 'phase-hdr-label';
+    hl.innerHTML = `<span class="phase-num">F${pi+1}</span><span class="phase-hdr-name">${ph.name}</span>`;
+    hdr.appendChild(hl);
+
+    for (let w = 0; w < CURRENT_WEEKS; w++) {
+      const c = document.createElement('div');
+      c.className = 'phase-hdr-wcell';
+      hdr.appendChild(c);
+    }
+    block.appendChild(hdr);
+
+    // Tasks
+    ph.tasks.forEach(task => {
+      const rs = riskStyle(task.category);
+      const pct = Math.round((task.progress || 0) * 100);
+
+      const row = document.createElement('div');
+      row.className = 'task-row';
+      row.style.gridTemplateColumns = `300px repeat(${CURRENT_WEEKS}, var(--w))`;
+      row.style.minWidth = `calc(300px + ${CURRENT_WEEKS} * var(--w))`;
+
+      row.addEventListener('mouseenter', () => row.style.background = ph.light + '99');
+      row.addEventListener('mouseleave', () => row.style.background = '');
+      row.onclick = () => openDrawer(task, ph, pi);
+
+      // Task info cell
+      const info = document.createElement('div');
+      info.className = 'task-info';
+      info.innerHTML = `
+        <span class="resp-badge" style="background:${ph.color}">${task.resp.slice(0,3).toUpperCase()}</span>
+        <div class="task-meta">
+          <span class="task-label" title="${task.name}">${task.name}</span>
+          <div class="task-sub">
+            <div class="prog-track">
+              <div class="prog-fill" style="width:${pct}%;background:${ph.color}"></div>
+            </div>
+            <span class="prog-pct">${pct}%</span>
+            <span class="risk-chip" style="background:${rs.bg};color:${rs.color}">${task.category}</span>
+          </div>
+        </div>
+      `;
+      row.appendChild(info);
+
+      // Week slots
+      for (let w = 1; w <= CURRENT_WEEKS; w++) {
+        const slot = document.createElement('div');
+        slot.className = 'week-slot';
+        const grp = Math.floor((w - 1) / 4);
+        if (grp % 2 === 1) slot.style.background = 'rgba(0,0,0,0.018)';
+
+        if (w >= task.start && w < task.start + task.dur) {
+          const isFirst = w === task.start;
+          const isLast  = w === task.start + task.dur - 1;
+          const solo    = task.dur === 1;
+
+          const wrap = document.createElement('div');
+          wrap.className = 'bar-wrap' +
+            (solo ? ' cap-both' : isFirst ? ' cap-left' : isLast ? ' cap-right' : '');
+
+          const bg = document.createElement('div');
+          bg.className = 'bar-bg';
+          bg.style.background = ph.color;
+          bg.style.opacity = task.priority === 'alta' ? '0.88' : '0.6';
+
+          if (isFirst && pct > 0) {
+            const prog = document.createElement('div');
+            prog.className = 'bar-prog';
+            prog.style.width = `${Math.min(100, pct)}%`;
+            wrap.appendChild(prog);
+          }
+
+          wrap.appendChild(bg);
+          slot.appendChild(wrap);
+        }
+        row.appendChild(slot);
+      }
+
+      block.appendChild(row);
+    });
+
+    body.appendChild(block);
+  });
+}
+
+function renderSidebar(phases) {
+  const navEl = document.getElementById('phase-nav');
+  phases.forEach((ph, i) => {
+    const starts = ph.tasks.map(t => t.start);
+    const ends   = ph.tasks.map(t => t.start + t.dur - 1);
+    const range  = `S${Math.min(...starts)} – S${Math.max(...ends)}`;
+    const a = document.createElement('a');
+    a.className = 'phase-nav-item' + (i === 0 ? ' active' : '');
+    a.href = '#ph-' + i;
+    a.innerHTML = `
+      <div class="nav-dot" style="background:${ph.color}"></div>
+      <div>
+        <div class="nav-text">F${i+1} · ${ph.short}</div>
+        <div class="nav-weeks">${range}</div>
+      </div>
+    `;
+    navEl.appendChild(a);
+  });
+  setupSidebarObserver();
+}
+
+function renderFooter(phases) {
+  const footer = document.getElementById('footer');
+  footer.innerHTML = '';
+  phases.forEach((ph, i) => {
+    footer.innerHTML += `<div class="leg-item"><div class="leg-sw" style="background:${ph.color}"></div>F${i+1} · ${ph.short}</div>`;
+  });
+  Object.values(RISK_STYLE).forEach(rs => {
+    footer.innerHTML += `<div class="leg-item"><div class="leg-sw" style="background:${rs.bg};border:1px solid ${rs.color}"></div><span style="color:rgba(255,255,255,0.35)">${rs.label}</span></div>`;
+  });
+  footer.innerHTML += `<span class="footer-note">Haz clic en una tarea para ver detalles · ITFIP · Ing. Sistemas · 2026</span>`;
+}
+
+function setupSidebarObserver() {
+  const phBlocks = document.querySelectorAll('.phase-block');
+  const navItems = document.querySelectorAll('.phase-nav-item');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        navItems.forEach(n => n.classList.toggle('active', n.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { threshold: 0.25, rootMargin: '-100px 0px -50% 0px' });
+  phBlocks.forEach(b => obs.observe(b));
+}
+
+/* ── Initialize with first diagram ── */
+CURRENT_WEEKS = DIAGRAMS[0].weeks;
+const initialDiagram = DIAGRAMS[0];
+
+// Update month/ruler on load
+updateMonthAndRuler(initialDiagram.weeks, 0);
+
+// Initial render
+renderGantt(initialDiagram.phases);
+renderSidebar(initialDiagram.phases);
+renderFooter(initialDiagram.phases);
+
+// Update info display
+document.getElementById('diagram-info').textContent = DIAGRAMS_INFO[0].title;
+
+/* ── Drawer ── */
+function openDrawer(task, ph, pi) {
+  const rs  = riskStyle(task.category);
+  const pct = Math.round((task.progress || 0) * 100);
+
+  document.getElementById('d-pbar').style.background = ph.color;
+  const tag = document.getElementById('d-tag');
+  tag.textContent = `Fase ${pi+1} — ${ph.name}`;
+  tag.style.background = ph.color;
+
+  document.getElementById('d-title').textContent   = task.name;
+  document.getElementById('d-resp').textContent     = task.resp;
+  document.getElementById('d-asig').textContent     = task.asignado || '—';
+  document.getElementById('d-start').textContent    = 'S' + task.start;
+  document.getElementById('d-dur').textContent      = task.dur + (task.dur === 1 ? ' semana' : ' semanas');
+  document.getElementById('d-desc').textContent     = task.desc;
+
+  // Progress bar
+  document.getElementById('d-prog-pct').textContent   = pct + '%';
+  const fill = document.getElementById('d-prog-fill');
+  fill.style.width      = pct + '%';
+  fill.style.background = ph.color;
+
+  // Priority tag
+  const pTag = document.getElementById('d-priority');
+  pTag.textContent      = 'Prioridad ' + task.priority;
+  pTag.style.background = task.priority === 'alta' ? '#fff0ee' : '#fffbea';
+  pTag.style.color      = task.priority === 'alta' ? '#c0392b' : '#b7700d';
+
+  // Risk tag
+  const rTag = document.getElementById('d-risk');
+  rTag.textContent      = rs.label;
+  rTag.style.background = rs.bg;
+  rTag.style.color      = rs.color;
+
+  // Mini timeline
+  const mini = document.getElementById('d-mini');
+  const lbl  = document.getElementById('d-mini-lbl');
+  mini.innerHTML = ''; lbl.innerHTML = '';
+  for (let w = 1; w <= WEEKS; w++) {
+    const c = document.createElement('div');
+    c.className = 'mini-w';
+    if (w >= task.start && w < task.start + task.dur) {
+      c.style.background = ph.color;
+      c.classList.add('on');
+    }
+    mini.appendChild(c);
+    const l = document.createElement('div');
+    l.className = 'mini-lbl';
+    l.textContent = (w === 1 || w % 4 === 1) ? 'S'+w : '';
+    lbl.appendChild(l);
+  }
+
+  document.getElementById('overlay').style.display = 'block';
+  setTimeout(() => document.getElementById('drawer').classList.add('open'), 10);
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  setTimeout(() => { document.getElementById('overlay').style.display = 'none'; }, 320);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+/* ── Sidebar active on scroll ── */
+const phBlocks = document.querySelectorAll('.phase-block');
+const navItems = document.querySelectorAll('.phase-nav-item');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      navItems.forEach(n => n.classList.toggle('active', n.getAttribute('href') === '#' + id));
+    }
+  });
+}, { threshold: 0.25, rootMargin: '-100px 0px -50% 0px' });
+phBlocks.forEach(b => obs.observe(b));
+</script>
+</body>
+</html>

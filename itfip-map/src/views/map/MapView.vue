@@ -260,10 +260,11 @@ const setDestino = (destino) => {
 };
 
 const obtenerDatos = async () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
   try {
     const [resNodos, resConn] = await Promise.all([
-      axios.get('http://127.0.0.1:8000/api/nodos'),
-      axios.get('http://127.0.0.1:8000/api/conexiones')
+      axios.get(`${apiUrl}/nodos`),
+      axios.get(`${apiUrl}/conexiones`)
     ]);
     nodos.value = resNodos.data;
     conexiones.value = resConn.data;
