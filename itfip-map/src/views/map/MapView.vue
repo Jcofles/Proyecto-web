@@ -36,6 +36,7 @@ const animRequest = ref(null);
 const markerAnimation = ref(null);
 const rutaRecorrida = ref(null);
 const WALKING_SPEED = 1.4;
+const SNAP_THRESHOLD = 25; // metros — si el GPS está dentro de este rango, el marcador se pega a la ruta
 const compassEnabled = ref(false);
 const userMarkerRotation = ref(0);
 const testingPermissions = ref(false);
@@ -115,6 +116,23 @@ const closestPointOnSegment = (point, start, end) => {
   if (t <= 0) return start;
   if (t >= 1) return end;
   return L.latLng(start.lat + dy * t, start.lng + dx * t);
+};
+
+// Devuelve el punto más cercano sobre la ruta si el usuario está dentro del umbral.
+// Si está más lejos, devuelve null (se usará la posición GPS real).
+const getSnappedPosition = (userPos) => {
+  if (!rutaLatlngs.value.length) return null;
+  const current = L.latLng(userPos.lat, userPos.lng);
+  let bestPoint = null;
+  let bestDist = Infinity;
+  for (let i = 0; i < rutaLatlngs.value.length - 1; i++) {
+    const a = L.latLng(rutaLatlngs.value[i][0], rutaLatlngs.value[i][1]);
+    const b = L.latLng(rutaLatlngs.value[i + 1][0], rutaLatlngs.value[i + 1][1]);
+    const candidate = closestPointOnSegment(current, a, b);
+    const dist = current.distanceTo(candidate);
+    if (dist < bestDist) { bestDist = dist; bestPoint = candidate; }
+  }
+  return bestDist <= SNAP_THRESHOLD ? bestPoint : null;
 };
 
 const isInsideMappedArea = computed(() => {
@@ -573,7 +591,14 @@ const updateMapTheme = () => {
 // SOLO actualiza la posición del marcador, NO mueve el mapa automáticamente
 watch(userLocation, (newLocation) => {
   if (newLocation && newLocation.lat && newLocation.lng && marcadorUsuario.value) {
-    const targetLatLng = L.latLng(newLocation.lat, newLocation.lng);
+    // Route snapping: si hay ruta activa y no estamos en simulación,
+    // intentar pegar el marcador a la ruta si el GPS está cerca (≤ SNAP_THRESHOLD).
+    let targetLatLng = L.latLng(newLocation.lat, newLocation.lng);
+    if (!isSimulando.value && rutaLatlngs.value.length) {
+      const snapped = getSnappedPosition(newLocation);
+      if (snapped) targetLatLng = snapped;
+    }
+
     const currentPos = marcadorUsuario.value.getLatLng();
     const distance = currentPos.distanceTo(targetLatLng);
 
@@ -581,14 +606,11 @@ watch(userLocation, (newLocation) => {
     if (isSimulando.value || distance < 0.6) {
       marcadorUsuario.value.setLatLng(targetLatLng);
     } else if (distance > 18) {
-      // Saltos grandes deben posicionarse inmediatamente para no arrastrar demasiado
       marcadorUsuario.value.setLatLng(targetLatLng);
     } else {
       const duration = Math.min(260, Math.max(120, Math.round(distance * 18)));
       animateUserMarkerTo(targetLatLng, duration);
     }
-
-    console.log('📍 Ubicación actualizada:', newLocation.lat, newLocation.lng, 'dist:', Math.round(distance));
   }
 
   if (rutaLatlngs.value.length && newLocation && newLocation.lat && newLocation.lng) {
