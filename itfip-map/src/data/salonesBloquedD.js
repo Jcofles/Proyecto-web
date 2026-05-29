@@ -19,7 +19,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 2" },
+      "properties": { "nombre": "Salón D 101" },
       "geometry": {
         "coordinates": [
           [
@@ -197,7 +197,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 13" },
+      "properties": { "nombre": "Salón D 111" },
       "geometry": {
         "coordinates": [
           [

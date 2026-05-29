@@ -659,26 +659,14 @@ onMounted(async () => {
   // Agregar salones del Bloque D
   try {
     L.geoJSON(salonesBloquedD, {
-      style: (feature) => {
-        const nombre = feature.properties.nombre.toLowerCase();
-        const esBano = nombre.includes('baño') || nombre.includes('bano') || nombre.includes('sanitario');
-        return {
-          color: esBano ? '#0d9488' : '#8b5cf6',
-          weight: 2,
-          fillColor: esBano ? '#14b8a6' : '#a78bfa',
-          fillOpacity: 0.25
-        };
+      style: {
+        color: '#8b5cf6',
+        weight: 2,
+        fillColor: '#a78bfa',
+        fillOpacity: 0.25
       },
       onEachFeature: (feature, layer) => {
-        const nombre = feature.properties.nombre;
-        const esBano = nombre.toLowerCase().includes('baño') || nombre.toLowerCase().includes('bano');
-        const emoji = esBano ? '🚻' : '🎓';
-        layer.bindTooltip(`${emoji} ${nombre}`, {
-          permanent: true,
-          direction: 'center',
-          className: 'salon-tooltip',
-          opacity: 1
-        });
+        layer.bindPopup(`<strong>${feature.properties.nombre}</strong><br>Bloque D – Piso 1`);
       }
     }).addTo(map.value);
     console.log('✅ Salones agregados');
@@ -807,11 +795,17 @@ const createPoiMarkerIcon = (emoji, nombre, color = '#0ea5e9') => {
 };
 
 const crearMarcadoresLugares = () => {
-  // Solo marcadores exteriores: el GPS al aire libre es preciso
   const LUGARES = [
+    // Exteriores — GPS preciso al aire libre
     { nombre: 'Entrada Universidad', emoji: '🏫', lat: 4.15402640, lng: -74.89564350, color: '#16a34a' },
     { nombre: 'Bloque D', emoji: '🏢', lat: 4.15653360, lng: -74.89773380, color: '#0ea5e9' },
     { nombre: 'Cafetería', emoji: '☕', lat: 4.15692990, lng: -74.89763710, color: '#f59e0b' },
+    // Bloque D piso 1 — posición calculada desde centroide del polígono dibujado
+    { nombre: 'Salón D 101', emoji: '🎓', lat: 4.15661579, lng: -74.89758324, color: '#8b5cf6' },
+    { nombre: 'Salón D 111', emoji: '🎓', lat: 4.15662388, lng: -74.89753213, color: '#8b5cf6' },
+    // D 102 y Baños no tienen polígono coincidente — se usa coordenada GPS como referencia
+    { nombre: 'Salón D 102', emoji: '🎓', lat: 4.1566858, lng: -74.8975273, color: '#8b5cf6' },
+    { nombre: 'Baños D', emoji: '🚻', lat: 4.1566339, lng: -74.8975769, color: '#0d9488' },
   ];
   LUGARES.forEach(({ nombre, emoji, lat, lng, color }) => {
     L.marker([lat, lng], {
@@ -1895,24 +1889,6 @@ const testPermissions = async () => {
   .tog-lbl {
     font-size: 8.5px;
   }
-}
-
-/* ═══ ETIQUETAS SALONES (sobre polígonos GeoJSON) ═══ */
-:deep(.salon-tooltip) {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1.5px solid #8b5cf6;
-  border-radius: 8px;
-  padding: 2px 7px;
-  font-family: 'Manrope', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  color: #1a2035;
-  white-space: nowrap;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
-  pointer-events: none;
-}
-:deep(.salon-tooltip::before) {
-  display: none;
 }
 
 /* ═══ POI MARKERS ═══ */
