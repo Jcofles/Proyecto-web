@@ -83,6 +83,21 @@ class NodoController extends Controller
             ['id' => 49, 'nombre' => 'Cafeteria', 'latitud' => 4.15692990, 'longitud' => -74.89763710, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 50, 'nombre' => 'Paso Cafetería', 'latitud' => 4.15690810, 'longitud' => -74.89758290, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 51, 'nombre' => 'Escalera Cafetería', 'latitud' => 4.15691110, 'longitud' => -74.89764240, 'tipo_id' => 4, 'piso' => 1],
+            // Bloque D - interior piso 1
+            ['id' => 52, 'nombre' => 'Pasillo D', 'latitud' => 4.1566260, 'longitud' => -74.8975792, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 53, 'nombre' => 'Salón D 111', 'latitud' => 4.1566392, 'longitud' => -74.8975613, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 54, 'nombre' => 'Salón D 101', 'latitud' => 4.1566397, 'longitud' => -74.8975852, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 55, 'nombre' => 'Baños D', 'latitud' => 4.1566339, 'longitud' => -74.8975769, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 56, 'nombre' => 'Pasillo D Interior', 'latitud' => 4.1566702, 'longitud' => -74.8975992, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 57, 'nombre' => 'Salón D 102', 'latitud' => 4.1566858, 'longitud' => -74.8975273, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 58, 'nombre' => 'Pasillo D Fondo', 'latitud' => 4.1566566, 'longitud' => -74.8974634, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 59, 'nombre' => 'Escaleras D', 'latitud' => 4.1565193, 'longitud' => -74.8974427, 'tipo_id' => 4, 'piso' => 1],
+            // Bloque D - interior piso 2
+            ['id' => 60, 'nombre' => 'Salón D 201', 'latitud' => 4.1565152, 'longitud' => -74.8974485, 'tipo_id' => 2, 'piso' => 2],
+            ['id' => 61, 'nombre' => 'Salón D 202', 'latitud' => 4.1565651, 'longitud' => -74.8974541, 'tipo_id' => 2, 'piso' => 2],
+            ['id' => 62, 'nombre' => 'Salón D 203', 'latitud' => 4.1565743, 'longitud' => -74.8974548, 'tipo_id' => 2, 'piso' => 2],
+            ['id' => 63, 'nombre' => 'Salón D 204', 'latitud' => 4.1565778, 'longitud' => -74.8974290, 'tipo_id' => 2, 'piso' => 2],
+            ['id' => 64, 'nombre' => 'Salón D 205', 'latitud' => 4.1565408, 'longitud' => -74.8973930, 'tipo_id' => 2, 'piso' => 2],
         ];
     }
 
@@ -139,6 +154,21 @@ class NodoController extends Controller
             ['id' => 48, 'nodo_origen' => 48, 'nodo_destino' => 49, 'distancia' => 7.66],
             ['id' => 49, 'nodo_origen' => 49, 'nodo_destino' => 50, 'distancia' => 6.45],
             ['id' => 50, 'nodo_origen' => 50, 'nodo_destino' => 51, 'distancia' => 5.19],
+            // Bloque D - acceso y pasillo piso 1
+            ['id' => 51, 'nodo_origen' => 44, 'nodo_destino' => 52, 'distancia' => 19.8],
+            ['id' => 52, 'nodo_origen' => 52, 'nodo_destino' => 53, 'distancia' => 2.5],
+            ['id' => 53, 'nodo_origen' => 52, 'nodo_destino' => 54, 'distancia' => 1.5],
+            ['id' => 54, 'nodo_origen' => 52, 'nodo_destino' => 55, 'distancia' => 1.0],
+            ['id' => 55, 'nodo_origen' => 52, 'nodo_destino' => 56, 'distancia' => 5.0],
+            ['id' => 56, 'nodo_origen' => 56, 'nodo_destino' => 57, 'distancia' => 8.0],
+            ['id' => 57, 'nodo_origen' => 56, 'nodo_destino' => 58, 'distancia' => 15.0],
+            // Bloque D - escaleras y piso 2
+            ['id' => 58, 'nodo_origen' => 58, 'nodo_destino' => 59, 'distancia' => 16.0],
+            ['id' => 59, 'nodo_origen' => 59, 'nodo_destino' => 60, 'distancia' => 1.0],
+            ['id' => 60, 'nodo_origen' => 59, 'nodo_destino' => 61, 'distancia' => 5.5],
+            ['id' => 61, 'nodo_origen' => 59, 'nodo_destino' => 62, 'distancia' => 6.5],
+            ['id' => 62, 'nodo_origen' => 59, 'nodo_destino' => 63, 'distancia' => 7.0],
+            ['id' => 63, 'nodo_origen' => 59, 'nodo_destino' => 64, 'distancia' => 5.0],
         ];
     }
 
@@ -270,11 +300,19 @@ class NodoController extends Controller
         // Construir grafo de conexiones
         $grafo = [];
         foreach ($conexiones as $conn) {
-            if (!isset($grafo[$conn['nodo_origen_id']])) {
-                $grafo[$conn['nodo_origen_id']] = [];
+            if (!isset($grafo[$conn['nodo_origen']])) {
+                $grafo[$conn['nodo_origen']] = [];
             }
-            $grafo[$conn['nodo_origen_id']][] = [
-                'destino' => $conn['nodo_destino_id'],
+            $grafo[$conn['nodo_origen']][] = [
+                'destino' => $conn['nodo_destino'],
+                'distancia' => $conn['distancia']
+            ];
+            // Conexión inversa (bidireccional)
+            if (!isset($grafo[$conn['nodo_destino']])) {
+                $grafo[$conn['nodo_destino']] = [];
+            }
+            $grafo[$conn['nodo_destino']][] = [
+                'destino' => $conn['nodo_origen'],
                 'distancia' => $conn['distancia']
             ];
         }

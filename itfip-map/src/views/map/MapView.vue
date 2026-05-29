@@ -56,9 +56,19 @@ const distanciaFormateada = computed(() => {
 const DESTINO_PRESETS = [
   { keys: ['Entrada Universidad', 'Entrada Principal', 'Entrada'], label: 'Entrada Universidad' },
   { keys: ['Bloque D', 'Bloque 2'], label: 'Bloque D' },
-  { keys: ['Cafeteria', 'Cafetería'], label: 'Cafeteria' }
+  { keys: ['Cafeteria', 'Cafetería'], label: 'Cafeteria' },
+  { keys: ['Salón D 101', 'Salon D 101'], label: 'Salón D 101' },
+  { keys: ['Salón D 102', 'Salon D 102'], label: 'Salón D 102' },
+  { keys: ['Salón D 111', 'Salon D 111'], label: 'Salón D 111' },
+  { keys: ['Baños D', 'Banos D'], label: 'Baños D' },
+  { keys: ['Escaleras D'], label: 'Escaleras D' },
+  { keys: ['Salón D 201', 'Salon D 201'], label: 'Salón D 201' },
+  { keys: ['Salón D 202', 'Salon D 202'], label: 'Salón D 202' },
+  { keys: ['Salón D 203', 'Salon D 203'], label: 'Salón D 203' },
+  { keys: ['Salón D 204', 'Salon D 204'], label: 'Salón D 204' },
+  { keys: ['Salón D 205', 'Salon D 205'], label: 'Salón D 205' },
 ];
-const MAPPED_ZONE_RADIUS = 35;
+const MAPPED_ZONE_RADIUS = 50;
 const searchQuery = ref('');
 const isSearchOpen = ref(false);
 const mappedZoneError = ref('');
@@ -352,7 +362,7 @@ const calcularRuta = () => {
     const latlngs = [[currentPos.lat, currentPos.lng]];
     camino.slice(1).forEach(id => {
       const n = nodos.value.find(node => node.id == id);
-      latlngs.push([n.latitud, n.longitud]);
+      if (n) latlngs.push([n.latitud, n.longitud]);
     });
 
     rutaLatlngs.value = latlngs;
@@ -937,7 +947,7 @@ const testPermissions = async () => {
           v-model="searchQuery"
           @focus="isSearchOpen = true"
           @blur="setTimeout(() => isSearchOpen = false, 200)"
-          placeholder="Solo zonas mapeadas: Bloque D, Cafetería, Entrada Universidad"
+          placeholder="Ej: Salón D 101, Bloque D, Cafetería, Entrada..."
           class="destination-input"
         />
 
