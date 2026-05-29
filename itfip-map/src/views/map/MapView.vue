@@ -36,7 +36,7 @@ const animRequest = ref(null);
 const markerAnimation = ref(null);
 const rutaRecorrida = ref(null);
 const WALKING_SPEED = 1.4;
-const SNAP_THRESHOLD = 25; // metros — si el GPS está dentro de este rango, el marcador se pega a la ruta
+const SNAP_THRESHOLD = 30; // metros — si el GPS está dentro de este rango, el marcador se pega a la ruta
 const compassEnabled = ref(false);
 const userMarkerRotation = ref(0);
 const testingPermissions = ref(false);
@@ -63,11 +63,6 @@ const DESTINO_PRESETS = [
   { keys: ['Salón D 111', 'Salon D 111'], label: 'Salón D 111' },
   { keys: ['Baños D', 'Banos D'], label: 'Baños D' },
   { keys: ['Escaleras D'], label: 'Escaleras D' },
-  { keys: ['Salón D 201', 'Salon D 201'], label: 'Salón D 201' },
-  { keys: ['Salón D 202', 'Salon D 202'], label: 'Salón D 202' },
-  { keys: ['Salón D 203', 'Salon D 203'], label: 'Salón D 203' },
-  { keys: ['Salón D 204', 'Salon D 204'], label: 'Salón D 204' },
-  { keys: ['Salón D 205', 'Salon D 205'], label: 'Salón D 205' },
 ];
 const MAPPED_ZONE_RADIUS = 50;
 const searchQuery = ref('');
@@ -353,7 +348,7 @@ const calcularRuta = () => {
   let inicioId = 1;
   let minDist = Infinity;
   nodos.value.forEach(n => {
-    const d = Math.sqrt(Math.pow(n.latitud - currentPos.lat, 2) + Math.pow(n.longitud - currentPos.lng, 2));
+    const d = L.latLng(n.latitud, n.longitud).distanceTo(currentPos);
     if (d < minDist) { minDist = d; inicioId = n.id; }
   });
 
@@ -682,6 +677,9 @@ onMounted(async () => {
   await obtenerDatos();
   console.log('✅ Datos obtenidos');
 
+  crearMarcadoresLugares();
+  console.log('✅ Marcadores de lugares agregados');
+
   // Usar ubicación real del usuario si está disponible, sino usar ubicación por defecto
   const initialLat = userLocation.value?.lat || 4.1560131;
   const initialLng = userLocation.value?.lng || -74.8972928;
@@ -785,6 +783,34 @@ const toggleCompass = async () => {
       alert('No se pudo activar la brújula. Error: ' + (compassError.value || 'Desconocido'));
     }
   }
+};
+
+const createPoiMarkerIcon = (emoji, nombre, color = '#0ea5e9') => {
+  return L.divIcon({
+    className: 'poi-div',
+    html: `<div class="poi-inner" style="border-color:${color}"><span class="poi-emoji-char">${emoji}</span><span class="poi-nombre">${nombre}</span></div><div class="poi-stem" style="border-top-color:${color}"></div>`,
+    iconSize: [200, 48],
+    iconAnchor: [100, 48]
+  });
+};
+
+const crearMarcadoresLugares = () => {
+  const LUGARES = [
+    { nombre: 'Entrada Universidad', emoji: '🏫', lat: 4.15402640, lng: -74.89564350, color: '#16a34a' },
+    { nombre: 'Bloque D', emoji: '🏢', lat: 4.15653360, lng: -74.89773380, color: '#0ea5e9' },
+    { nombre: 'Cafetería', emoji: '☕', lat: 4.15692990, lng: -74.89763710, color: '#f59e0b' },
+    { nombre: 'Salón D 101', emoji: '🎓', lat: 4.1566397, lng: -74.8975852, color: '#8b5cf6' },
+    { nombre: 'Salón D 102', emoji: '🎓', lat: 4.1566858, lng: -74.8975273, color: '#8b5cf6' },
+    { nombre: 'Salón D 111', emoji: '🎓', lat: 4.1566392, lng: -74.8975613, color: '#8b5cf6' },
+    { nombre: 'Baños D', emoji: '🚻', lat: 4.1566339, lng: -74.8975769, color: '#0d9488' },
+  ];
+  LUGARES.forEach(({ nombre, emoji, lat, lng, color }) => {
+    L.marker([lat, lng], {
+      icon: createPoiMarkerIcon(emoji, nombre, color),
+      interactive: false,
+      zIndexOffset: -200
+    }).addTo(map.value);
+  });
 };
 
 const testPermissions = async () => {
@@ -1860,5 +1886,47 @@ const testPermissions = async () => {
   .tog-lbl {
     font-size: 8.5px;
   }
+}
+
+/* ═══ POI MARKERS ═══ */
+:deep(.poi-div) {
+  background: transparent !important;
+  border: none !important;
+  text-align: center;
+  overflow: visible !important;
+}
+:deep(.poi-inner) {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 2px solid;
+  border-radius: 20px;
+  padding: 5px 11px;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a2035;
+  white-space: nowrap;
+  max-width: 180px;
+  pointer-events: none;
+}
+:deep(.poi-emoji-char) {
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+:deep(.poi-nombre) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:deep(.poi-stem) {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid;
+  margin: 0 auto;
 }
 </style>  
