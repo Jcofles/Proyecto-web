@@ -73,9 +73,8 @@ export function useGeolocation() {
 
     userLocation.value = { lat: smoothLat, lng: smoothLng }
 
-    // FIX: se usaba filteredLat/filteredLng (undefined) — ahora usa smoothLat/smoothLng
-    isInsideCampus.value =
-      calculateDistance(smoothLat, smoothLng, ITFIP_CENTER.lat, ITFIP_CENTER.lng) <= CAMPUS_RADIUS
+    // Verificación de campus desactivada para permitir pruebas desde cualquier ubicación
+    isInsideCampus.value = true
 
     isLoading.value = false
     error.value = null
