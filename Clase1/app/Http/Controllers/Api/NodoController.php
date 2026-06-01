@@ -148,8 +148,8 @@ class NodoController extends Controller
             ['id' => 48, 'nodo_origen' => 48, 'nodo_destino' => 49, 'distancia' => 7.66],
             ['id' => 49, 'nodo_origen' => 49, 'nodo_destino' => 50, 'distancia' => 6.45],
             ['id' => 50, 'nodo_origen' => 50, 'nodo_destino' => 51, 'distancia' => 5.19],
-            // Bloque D - acceso y pasillo piso 1
-            ['id' => 51, 'nodo_origen' => 44, 'nodo_destino' => 52, 'distancia' => 19.8],
+            // Bloque D - acceso: se entra desde nodo 46 (fachada oeste) al pasillo interior
+            ['id' => 51, 'nodo_origen' => 46, 'nodo_destino' => 52, 'distancia' => 21.4],
             ['id' => 52, 'nodo_origen' => 52, 'nodo_destino' => 53, 'distancia' => 2.5],
             ['id' => 53, 'nodo_origen' => 52, 'nodo_destino' => 54, 'distancia' => 1.5],
             ['id' => 54, 'nodo_origen' => 52, 'nodo_destino' => 55, 'distancia' => 1.0],
