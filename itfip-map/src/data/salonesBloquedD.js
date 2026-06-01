@@ -3,7 +3,7 @@ export const salonesBloquedD = {
   "features": [
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 1" },
+      "properties": { "nombre": "Salón D 107" },
       "geometry": {
         "coordinates": [
           [
@@ -19,7 +19,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón D 101" },
+      "properties": { "nombre": "Salón D 110" },
       "geometry": {
         "coordinates": [
           [
@@ -35,7 +35,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 3" },
+      "properties": { "nombre": "Salón D 103" },
       "geometry": {
         "coordinates": [
           [
@@ -51,7 +51,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 4" },
+      "properties": { "nombre": "Salón D 106" },
       "geometry": {
         "coordinates": [
           [
@@ -67,7 +67,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 5" },
+      "properties": { "nombre": "Escaleras D" },
       "geometry": {
         "coordinates": [
           [
@@ -85,7 +85,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 6" },
+      "properties": { "nombre": "Salón D 111" },
       "geometry": {
         "coordinates": [
           [
@@ -101,7 +101,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 7" },
+      "properties": { "nombre": "Salón D 102" },
       "geometry": {
         "coordinates": [
           [
@@ -117,7 +117,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 8" },
+      "properties": { "nombre": "Salón D 101" },
       "geometry": {
         "coordinates": [
           [
@@ -133,7 +133,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 9" },
+      "properties": { "nombre": "Baños D" },
       "geometry": {
         "coordinates": [
           [
@@ -149,7 +149,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 10" },
+      "properties": { "nombre": "Salón D 104" },
       "geometry": {
         "coordinates": [
           [
@@ -165,7 +165,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 11" },
+      "properties": { "nombre": "Salón D 105" },
       "geometry": {
         "coordinates": [
           [
@@ -181,7 +181,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón 12" },
+      "properties": { "nombre": "Salón D 108" },
       "geometry": {
         "coordinates": [
           [
@@ -197,7 +197,7 @@ export const salonesBloquedD = {
     },
     {
       "type": "Feature",
-      "properties": { "nombre": "Salón D 111" },
+      "properties": { "nombre": "Salón D 109" },
       "geometry": {
         "coordinates": [
           [

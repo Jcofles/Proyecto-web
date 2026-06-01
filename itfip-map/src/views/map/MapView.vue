@@ -658,6 +658,21 @@ onMounted(async () => {
 
   // Agregar salones del Bloque D
   try {
+    const POLYGON_EMOJI = {
+      'Salón D 101': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 102': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 103': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 104': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 105': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 106': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 107': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 108': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 109': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 110': { emoji: '🎓', color: '#8b5cf6' },
+      'Salón D 111': { emoji: '🎓', color: '#8b5cf6' },
+      'Baños D':     { emoji: '🚻', color: '#0d9488' },
+      'Escaleras D': { emoji: '🪜', color: '#64748b' },
+    };
     L.geoJSON(salonesBloquedD, {
       style: {
         color: '#8b5cf6',
@@ -666,7 +681,19 @@ onMounted(async () => {
         fillOpacity: 0.25
       },
       onEachFeature: (feature, layer) => {
-        layer.bindPopup(`<strong>${feature.properties.nombre}</strong><br>Bloque D – Piso 1`);
+        const nombre = feature.properties.nombre;
+        layer.bindPopup(`<strong>${nombre}</strong><br>Bloque D – Piso 1`);
+        const poiDef = POLYGON_EMOJI[nombre];
+        if (poiDef) {
+          const ring = feature.geometry.coordinates[0].slice(0, -1);
+          const lat = ring.reduce((sum, c) => sum + c[1], 0) / ring.length;
+          const lng = ring.reduce((sum, c) => sum + c[0], 0) / ring.length;
+          L.marker([lat, lng], {
+            icon: createPoiMarkerIcon(poiDef.emoji, nombre, poiDef.color),
+            interactive: false,
+            zIndexOffset: -200
+          }).addTo(map.value);
+        }
       }
     }).addTo(map.value);
     console.log('✅ Salones agregados');
@@ -796,16 +823,11 @@ const createPoiMarkerIcon = (emoji, nombre, color = '#0ea5e9') => {
 
 const crearMarcadoresLugares = () => {
   const LUGARES = [
-    // Exteriores — GPS preciso al aire libre
+    // Exteriores
     { nombre: 'Entrada Universidad', emoji: '🏫', lat: 4.15402640, lng: -74.89564350, color: '#16a34a' },
     { nombre: 'Bloque D', emoji: '🏢', lat: 4.15653360, lng: -74.89773380, color: '#0ea5e9' },
     { nombre: 'Cafetería', emoji: '☕', lat: 4.15692990, lng: -74.89763710, color: '#f59e0b' },
-    // Bloque D piso 1 — posición calculada desde centroide del polígono dibujado
-    { nombre: 'Salón D 101', emoji: '🎓', lat: 4.15661579, lng: -74.89758324, color: '#8b5cf6' },
-    { nombre: 'Salón D 111', emoji: '🎓', lat: 4.15662388, lng: -74.89753213, color: '#8b5cf6' },
-    // D 102 y Baños no tienen polígono coincidente — se usa coordenada GPS como referencia
-    { nombre: 'Salón D 102', emoji: '🎓', lat: 4.1566858, lng: -74.8975273, color: '#8b5cf6' },
-    { nombre: 'Baños D', emoji: '🚻', lat: 4.1566339, lng: -74.8975769, color: '#0d9488' },
+    // Piso 2 — coordenadas del nodo GPS (sin polígono aún)
   ];
   LUGARES.forEach(({ nombre, emoji, lat, lng, color }) => {
     L.marker([lat, lng], {
