@@ -83,15 +83,28 @@ class NodoController extends Controller
             ['id' => 49, 'nombre' => 'Cafeteria', 'latitud' => 4.15692990, 'longitud' => -74.89763710, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 50, 'nombre' => 'Paso Cafetería', 'latitud' => 4.15690810, 'longitud' => -74.89758290, 'tipo_id' => 2, 'piso' => 1],
             ['id' => 51, 'nombre' => 'Escalera Cafetería', 'latitud' => 4.15691110, 'longitud' => -74.89764240, 'tipo_id' => 4, 'piso' => 1],
-            // Bloque D - interior piso 1
-            ['id' => 52, 'nombre' => 'Pasillo D', 'latitud' => 4.1566260, 'longitud' => -74.8975792, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 53, 'nombre' => 'Salón D 111', 'latitud' => 4.1566392, 'longitud' => -74.8975613, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 54, 'nombre' => 'Salón D 101', 'latitud' => 4.1566397, 'longitud' => -74.8975852, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 55, 'nombre' => 'Baños D', 'latitud' => 4.1566339, 'longitud' => -74.8975769, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 56, 'nombre' => 'Pasillo D Interior', 'latitud' => 4.1566702, 'longitud' => -74.8975992, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 57, 'nombre' => 'Salón D 102', 'latitud' => 4.1566858, 'longitud' => -74.8975273, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 58, 'nombre' => 'Pasillo D Fondo', 'latitud' => 4.1566566, 'longitud' => -74.8974634, 'tipo_id' => 2, 'piso' => 1],
-            ['id' => 59, 'nombre' => 'Escaleras D', 'latitud' => 4.1565193, 'longitud' => -74.8974427, 'tipo_id' => 4, 'piso' => 1],
+            // Bloque D - pasillo principal (nodos de corredor, de oeste a este)
+            ['id' => 52, 'nombre' => 'Pasillo D - Entrada',  'latitud' => 4.15655000, 'longitud' => -74.89768000, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 53, 'nombre' => 'Pasillo D - J1',       'latitud' => 4.15657000, 'longitud' => -74.89762000, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 54, 'nombre' => 'Pasillo D - J2',       'latitud' => 4.15657000, 'longitud' => -74.89758000, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 55, 'nombre' => 'Pasillo D - J3',       'latitud' => 4.15657000, 'longitud' => -74.89752000, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 56, 'nombre' => 'Pasillo D - J4',       'latitud' => 4.15657000, 'longitud' => -74.89748000, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 57, 'nombre' => 'Pasillo D - J5',       'latitud' => 4.15657000, 'longitud' => -74.89744000, 'tipo_id' => 2, 'piso' => 1],
+            ['id' => 58, 'nombre' => 'Pasillo D - J6',       'latitud' => 4.15657000, 'longitud' => -74.89740000, 'tipo_id' => 2, 'piso' => 1],
+            // Bloque D - salones piso 1 (posición = centroide del polígono en salonesBloquedD.js)
+            ['id' => 59, 'nombre' => 'Salón D 101', 'latitud' => 4.15650016, 'longitud' => -74.89754316, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 60, 'nombre' => 'Salón D 102', 'latitud' => 4.15650298, 'longitud' => -74.89749188, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 61, 'nombre' => 'Salón D 103', 'latitud' => 4.15648137, 'longitud' => -74.89741781, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 62, 'nombre' => 'Salón D 104', 'latitud' => 4.15651953, 'longitud' => -74.89741176, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 63, 'nombre' => 'Salón D 105', 'latitud' => 4.15656386, 'longitud' => -74.89740441, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 64, 'nombre' => 'Salón D 106', 'latitud' => 4.15661588, 'longitud' => -74.89739692, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 65, 'nombre' => 'Salón D 107', 'latitud' => 4.15662502, 'longitud' => -74.89744101, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 66, 'nombre' => 'Salón D 108', 'latitud' => 4.15663185, 'longitud' => -74.89748452, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 67, 'nombre' => 'Salón D 109', 'latitud' => 4.15662388, 'longitud' => -74.89753213, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 68, 'nombre' => 'Salón D 110', 'latitud' => 4.15661579, 'longitud' => -74.89758357, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 69, 'nombre' => 'Salón D 111', 'latitud' => 4.15652584, 'longitud' => -74.89762227, 'tipo_id' => 1, 'piso' => 1],
+            ['id' => 70, 'nombre' => 'Baños D',     'latitud' => 4.15651397, 'longitud' => -74.89758775, 'tipo_id' => 3, 'piso' => 1],
+            ['id' => 71, 'nombre' => 'Escaleras D', 'latitud' => 4.15650412, 'longitud' => -74.89745298, 'tipo_id' => 4, 'piso' => 1],
         ];
     }
 
@@ -148,16 +161,34 @@ class NodoController extends Controller
             ['id' => 48, 'nodo_origen' => 48, 'nodo_destino' => 49, 'distancia' => 7.66],
             ['id' => 49, 'nodo_origen' => 49, 'nodo_destino' => 50, 'distancia' => 6.45],
             ['id' => 50, 'nodo_origen' => 50, 'nodo_destino' => 51, 'distancia' => 5.19],
-            // Bloque D - acceso: se entra desde nodo 46 (fachada oeste) al pasillo interior
-            ['id' => 51, 'nodo_origen' => 46, 'nodo_destino' => 52, 'distancia' => 21.4],
-            ['id' => 52, 'nodo_origen' => 52, 'nodo_destino' => 53, 'distancia' => 2.5],
-            ['id' => 53, 'nodo_origen' => 52, 'nodo_destino' => 54, 'distancia' => 1.5],
-            ['id' => 54, 'nodo_origen' => 52, 'nodo_destino' => 55, 'distancia' => 1.0],
-            ['id' => 55, 'nodo_origen' => 52, 'nodo_destino' => 56, 'distancia' => 5.0],
-            ['id' => 56, 'nodo_origen' => 56, 'nodo_destino' => 57, 'distancia' => 8.0],
-            ['id' => 57, 'nodo_origen' => 56, 'nodo_destino' => 58, 'distancia' => 15.0],
-            // Bloque D - escaleras piso 1
-            ['id' => 58, 'nodo_origen' => 58, 'nodo_destino' => 59, 'distancia' => 16.0],
+            // Bloque D - entrada: nodo 44 (Bloque D exterior) → pasillo interior
+            ['id' => 51, 'nodo_origen' => 44, 'nodo_destino' => 52, 'distancia' => 6.23],
+            // Pasillo principal de oeste a este
+            ['id' => 52, 'nodo_origen' => 52, 'nodo_destino' => 53, 'distancia' => 7.01],
+            ['id' => 53, 'nodo_origen' => 53, 'nodo_destino' => 54, 'distancia' => 4.43],
+            ['id' => 54, 'nodo_origen' => 54, 'nodo_destino' => 55, 'distancia' => 6.65],
+            ['id' => 55, 'nodo_origen' => 55, 'nodo_destino' => 56, 'distancia' => 4.43],
+            ['id' => 56, 'nodo_origen' => 56, 'nodo_destino' => 57, 'distancia' => 4.43],
+            ['id' => 57, 'nodo_origen' => 57, 'nodo_destino' => 58, 'distancia' => 4.43],
+            // Ramas desde J1 (id 53): D111
+            ['id' => 58, 'nodo_origen' => 53, 'nodo_destino' => 69, 'distancia' => 4.91],
+            // Ramas desde J2 (id 54): D110 (norte), D101 (sur), Baños (sur)
+            ['id' => 59, 'nodo_origen' => 54, 'nodo_destino' => 68, 'distancia' => 5.09],
+            ['id' => 60, 'nodo_origen' => 54, 'nodo_destino' => 59, 'distancia' => 8.77],
+            ['id' => 61, 'nodo_origen' => 54, 'nodo_destino' => 70, 'distancia' => 6.23],
+            // Ramas desde J3 (id 55): D109 (norte), D102 (sur)
+            ['id' => 62, 'nodo_origen' => 55, 'nodo_destino' => 67, 'distancia' => 5.99],
+            ['id' => 63, 'nodo_origen' => 55, 'nodo_destino' => 60, 'distancia' => 8.08],
+            // Rama desde J4 (id 56): D108 (norte)
+            ['id' => 64, 'nodo_origen' => 56, 'nodo_destino' => 66, 'distancia' => 6.87],
+            // Ramas desde J5 (id 57): D107 (norte), Escaleras (sur), D104 (sur)
+            ['id' => 65, 'nodo_origen' => 57, 'nodo_destino' => 65, 'distancia' => 6.11],
+            ['id' => 66, 'nodo_origen' => 57, 'nodo_destino' => 71, 'distancia' => 7.32],
+            ['id' => 67, 'nodo_origen' => 57, 'nodo_destino' => 62, 'distancia' => 6.42],
+            // Ramas desde J6 (id 58): D106 (norte), D105 (corredor), D103 (sur)
+            ['id' => 68, 'nodo_origen' => 58, 'nodo_destino' => 64, 'distancia' => 5.10],
+            ['id' => 69, 'nodo_origen' => 58, 'nodo_destino' => 63, 'distancia' => 0.61],
+            ['id' => 70, 'nodo_origen' => 58, 'nodo_destino' => 61, 'distancia' => 9.85],
         ];
     }
 
